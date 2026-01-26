@@ -1,0 +1,25 @@
+[
+    {
+        "origin": [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "https://dhakaecommerce-86c3c.web.app",
+            "https://dhakaecommerce-86c3c.firebaseapp.com",
+            "REPLACE_WITH_YOUR_VERCEL_URL"
+        ],
+        "method": [
+            "GET",
+            "PUT",
+            "POST",
+            "DELETE",
+            "HEAD",
+            "OPTIONS"
+        ],
+        "responseHeader": [
+            "Content-Type",
+            "x-goog-resumable",
+            "Authorization"
+        ],
+        "maxAgeSeconds": 3600
+    }
+]
