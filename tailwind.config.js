@@ -7,11 +7,11 @@ export default {
     theme: {
         extend: {
             colors: {
-                primary: "#006A4E", // Bangladesh Green
-                secondary: "#F42A41", // Bangladesh Red
-                accent: "#FFD700",
-                dark: "#1A1A1A",
-                light: "#F5F5F5"
+                primary: "var(--primary-color)",
+                secondary: "var(--secondary-color)",
+                accent: "var(--accent-color)",
+                dark: "var(--dark-color)",
+                light: "var(--light-color)"
             },
             fontFamily: {
                 sans: ['Inter', 'sans-serif'],

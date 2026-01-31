@@ -4,7 +4,57 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --primary-color: #006A4E;
+  --secondary-color: #F42A41;
+  --accent-color: #FFD700;
+  --dark-color: #1A1A1A;
+  --light-color: #F5F5F5;
+}
+
 body {
   font-family: 'Inter', sans-serif;
   @apply bg-light text-dark;
+}
+
+/* Print Optimization */
+/* Print Optimization - Strict Mode */
+@media print {
+
+  /* Hide everything by default using visibility to keep layout calculation but hide pixels */
+  body {
+    visibility: hidden;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  /* Make the strict print container visible */
+  .print-only-container,
+  .print-only-container * {
+    visibility: visible;
+  }
+
+  /* Position it over everything */
+  .print-only-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: auto;
+    z-index: 9999;
+    background: white;
+    display: block !important;
+    /* Ensure it overrides any hidden classes */
+  }
+
+  /* Double safety: hide specific admin UI elements if they leak */
+  nav,
+  footer,
+  .fixed,
+  .modal,
+  #root>div:not(.print-only-container) {
+    display: none !important;
+  }
 }

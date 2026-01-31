@@ -3,9 +3,13 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { getProducts } from "../../utils/dbServices";
 import ProductCard from "../../components/ProductCard";
+import OfferSlider from "../../components/OfferSlider";
+import AIRecommendations from "../../components/AIRecommendations";
+import { useAuth } from "../../context/AuthContext";
 
 const Home = () => {
     const [products, setProducts] = useState([]);
+    const { currentUser } = useAuth();
 
     useEffect(() => {
         const fetchFeatured = async () => {
@@ -16,44 +20,26 @@ const Home = () => {
     }, []);
 
     return (
-        <div>
-            {/* Hero Section */}
-            <section className="bg-primary text-white rounded-2xl overflow-hidden shadow-lg mb-12 relative">
-                <div className="container mx-auto px-6 py-16 md:py-24 relative z-10">
-                    <div className="md:w-1/2">
-                        <motion.h1
-                            initial={{ opacity: 0, x: -50 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5 }}
-                            className="text-4xl md:text-6xl font-bold mb-4 leading-tight"
-                        >
-                            Discover the Best <br /> of <span className="text-accent">Bangladesh</span>
-                        </motion.h1>
-                        <motion.p
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.3, duration: 0.5 }}
-                            className="text-lg mb-8 text-gray-200"
-                        >
-                            Premium quality products delivered straight to your doorstep. Experience shopping like never before with DhakaEcommerce.
-                        </motion.p>
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.6 }}
-                        >
-                            <Link to="/shop" className="bg-secondary text-white px-8 py-3 rounded-full font-bold hover:bg-red-700 transition shadow-lg transform hover:-translate-y-1 inline-block">
-                                Shop Now
-                            </Link>
-                        </motion.div>
-                    </div>
-                </div>
-                {/* Abstract Background Shapes */}
-                <div className="absolute top-0 right-0 w-1/2 h-full opacity-20 bg-gradient-to-l from-white to-transparent pointer-events-none"></div>
-            </section>
+        <div className="container mx-auto px-4 py-8">
+            {/* Dynamic Offer Slider (Hero) */}
+            <OfferSlider />
+
+            {/* AI Recommendations */}
+            <AIRecommendations
+                type="TRENDING"
+                title="Trending Now"
+            />
+
+            {currentUser && (
+                <AIRecommendations
+                    type="FOR_YOU"
+                    params={{ userId: currentUser.uid }}
+                    title="Recommended for You"
+                />
+            )}
 
             {/* Featured Products */}
-            <section className="mb-12">
+            <section className="mt-20">
                 <div className="flex justify-between items-end mb-8">
                     <div>
                         <h2 className="text-3xl font-bold text-gray-800">Featured Products</h2>

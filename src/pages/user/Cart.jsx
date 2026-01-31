@@ -3,7 +3,7 @@ import { useCart } from "../../context/CartContext";
 import { BsTrash, BsPlus, BsDash } from "react-icons/bs";
 
 const Cart = () => {
-    const { cart, removeFromCart, updateQuantity, cartTotal } = useCart();
+    const { cart, removeFromCart, updateQuantity, cartTotal, cartSubtotal, productDiscountTotal } = useCart();
 
     if (cart.length === 0) {
         return (
@@ -31,7 +31,12 @@ const Cart = () => {
                                 <div>
                                     <h3 className="font-bold text-gray-800">{item.title}</h3>
                                     <p className="text-gray-500 text-sm">{item.category}</p>
-                                    <p className="text-primary font-bold">৳{item.price}</p>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-primary font-bold">৳{Number(item.discountPrice || item.price)}</p>
+                                        {item.discountPrice && Number(item.discountPrice) < Number(item.price) && (
+                                            <p className="text-[10px] text-gray-400 line-through">৳{Number(item.price)}</p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -52,7 +57,7 @@ const Cart = () => {
                                     </button>
                                 </div>
                                 <div className="text-right">
-                                    <p className="font-bold">৳{item.price * item.quantity}</p>
+                                    <p className="font-bold">৳{Number(item.discountPrice || item.price) * item.quantity}</p>
                                     <button
                                         onClick={() => removeFromCart(item.id)}
                                         className="text-red-500 text-sm hover:underline flex items-center gap-1 justify-end mt-1"
@@ -69,17 +74,25 @@ const Cart = () => {
                 <div className="lg:w-1/3">
                     <div className="bg-white p-6 rounded-lg shadow">
                         <h2 className="text-xl font-bold mb-4">Order Summary</h2>
-                        <div className="flex justify-between mb-2 text-gray-600">
-                            <span>Subtotal</span>
-                            <span>৳{cartTotal}</span>
-                        </div>
-                        <div className="flex justify-between mb-4 text-gray-600">
-                            <span>Shipping</span>
-                            <span>৳50</span>
-                        </div>
-                        <div className="border-t pt-4 flex justify-between font-bold text-lg mb-6">
-                            <span>Total</span>
-                            <span>৳{cartTotal + 50}</span>
+                        <div className="space-y-4 mb-6">
+                            <div className="flex justify-between text-gray-600">
+                                <span>Subtotal (Raw)</span>
+                                <span>৳{Number(cartSubtotal)}</span>
+                            </div>
+                            {Number(productDiscountTotal) > 0 && (
+                                <div className="flex justify-between text-green-600">
+                                    <span>Product Discount</span>
+                                    <span>-৳{Number(productDiscountTotal)}</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between text-gray-600">
+                                <span>Shipping</span>
+                                <span>৳50</span>
+                            </div>
+                            <div className="border-t pt-4 flex justify-between font-bold text-lg">
+                                <span>Total</span>
+                                <span>৳{Number(cartSubtotal) - Number(productDiscountTotal) + 50}</span>
+                            </div>
                         </div>
                         <Link
                             to="/checkout"

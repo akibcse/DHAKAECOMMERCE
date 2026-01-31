@@ -14,6 +14,9 @@ export const CartProvider = ({ children }) => {
         localStorage.setItem("cart", JSON.stringify(cart));
     }, [cart]);
 
+    const [isCartModalOpen, setIsCartModalOpen] = useState(false);
+    const [lastAddedProduct, setLastAddedProduct] = useState(null);
+
     const addToCart = (product) => {
         setCart((prevCart) => {
             const existingItem = prevCart.find((item) => item.id === product.id);
@@ -26,6 +29,8 @@ export const CartProvider = ({ children }) => {
             }
             return [...prevCart, { ...product, quantity: 1 }];
         });
+        setLastAddedProduct(product);
+        setIsCartModalOpen(true);
     };
 
     const removeFromCart = (productId) => {
@@ -45,10 +50,17 @@ export const CartProvider = ({ children }) => {
         setCart([]);
     };
 
-    const cartTotal = cart.reduce(
+    const cartSubtotal = cart.reduce(
         (total, item) => total + item.price * item.quantity,
         0
     );
+
+    const productDiscountTotal = cart.reduce(
+        (total, item) => total + (item.discountPrice ? (item.price - item.discountPrice) * item.quantity : 0),
+        0
+    );
+
+    const cartTotal = cartSubtotal - productDiscountTotal;
 
     const cartCount = cart.reduce((count, item) => count + item.quantity, 0);
 
@@ -60,8 +72,13 @@ export const CartProvider = ({ children }) => {
                 removeFromCart,
                 updateQuantity,
                 clearCart,
+                cartSubtotal,
+                productDiscountTotal,
                 cartTotal,
                 cartCount,
+                isCartModalOpen,
+                setIsCartModalOpen,
+                lastAddedProduct,
             }}
         >
             {children}

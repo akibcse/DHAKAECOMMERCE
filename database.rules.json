@@ -1,0 +1,74 @@
+{
+    "rules": {
+        "products": {
+            ".read": true,
+            ".write": "root.child('users').child(auth.uid).child('role').val() === 'admin'"
+        },
+        "users": {
+            "$uid": {
+                ".read": "auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin'",
+                ".write": "auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin'"
+            },
+            ".read": "root.child('users').child(auth.uid).child('role').val() === 'admin'"
+        },
+        "orders": {
+            ".read": "auth !== null",
+            "$orderId": {
+                ".read": "data.child('userId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin'",
+                ".write": "auth !== null",
+                ".validate": "newData.hasChildren(['userId', 'items', 'finalAmount'])"
+            },
+            ".indexOn": [
+                "userId"
+            ],
+            ".write": "root.child('users').child(auth.uid).child('role').val() === 'admin'"
+        },
+        "messages": {
+            "$orderId": {
+                ".read": "root.child('orders').child($orderId).child('userId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin'",
+                ".write": "root.child('orders').child($orderId).child('userId').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin'"
+            }
+        },
+        "offers": {
+            ".read": true,
+            ".write": "root.child('users').child(auth.uid).child('role').val() === 'admin'"
+        },
+        "coupons": {
+            ".read": "auth !== null",
+            ".write": "root.child('users').child(auth.uid).child('role').val() === 'admin'"
+        },
+        "auditLogs": {
+            ".read": "root.child('users').child(auth.uid).child('role').val() === 'admin'",
+            "$logId": {
+                ".write": "auth !== null && !data.exists() && newData.exists()"
+            }
+        },
+        "counters": {
+            "orders": {
+                "$date": {
+                    ".read": "auth !== null",
+                    ".write": "auth !== null",
+                    ".validate": "newData.isNumber() && (!data.exists() || newData.val() === data.val() + 1)"
+                }
+            }
+        },
+        "fraudScores": {
+            "$uid": {
+                ".read": "auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin'",
+                ".write": "root.child('users').child(auth.uid).child('role').val() === 'admin'"
+            }
+        },
+        "recommendations": {
+            "$uid": {
+                ".read": "auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin'",
+                ".write": "root.child('users').child(auth.uid).child('role').val() === 'admin'"
+            }
+        },
+        "fcmTokens": {
+            "$uid": {
+                ".read": "auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin'",
+                ".write": "auth.uid === $uid"
+            }
+        }
+    }
+}
