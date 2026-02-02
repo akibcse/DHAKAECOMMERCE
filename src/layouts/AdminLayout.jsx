@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { BsGrid, BsBoxSeam, BsCartCheck, BsPeople, BsHouse, BsList, BsX, BsImages, BsTag, BsGraphUp, BsFileEarmarkBarGraph, BsGear } from "react-icons/bs";
+import { BsGrid, BsBoxSeam, BsCartCheck, BsPeople, BsHouse, BsList, BsX, BsImages, BsTag, BsGraphUp, BsFileEarmarkBarGraph, BsFileEarmarkSpreadsheet, BsGear } from "react-icons/bs";
 import clsx from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -17,6 +17,7 @@ const AdminLayout = () => {
         { path: "/admin/users", label: "Users", icon: <BsPeople /> },
         { path: "/admin/offers", label: "Banners", icon: <BsImages /> },
         { path: "/admin/coupons", label: "Coupons", icon: <BsTag /> },
+        { path: "/admin/accounting", label: "Accounting", icon: <BsFileEarmarkSpreadsheet /> },
         { path: "/admin/settings", label: "Settings", icon: <BsGear /> },
     ];
 

@@ -34,6 +34,14 @@ import AdvancedAnalytics from "./pages/admin/AdvancedAnalytics";
 import SalesReport from "./pages/admin/SalesReport";
 import Settings from "./pages/admin/Settings"; // [NEW]
 
+// Accounting Pages
+import AccountingDashboard from "./pages/admin/accounting/AccountingDashboard";
+import Customers from "./pages/admin/accounting/Customers";
+import OfflineSales from "./pages/admin/accounting/OfflineSales";
+import MoneyReceipt from "./pages/admin/accounting/MoneyReceipt";
+import AccountingReports from "./pages/admin/accounting/AccountingReports";
+import CustomerLedgerView from "./pages/admin/accounting/CustomerLedgerView";
+
 import AddToCartModal from "./components/AddToCartModal";
 
 function App() {
@@ -75,6 +83,14 @@ function App() {
                   <Route path="analytics" element={<AdvancedAnalytics />} />
                   <Route path="sales-report" element={<SalesReport />} />
                   <Route path="settings" element={<Settings />} />
+
+                  {/* Accounting Module Routes */}
+                  <Route path="accounting" element={<AccountingDashboard />} />
+                  <Route path="accounting/customers" element={<Customers />} />
+                  <Route path="accounting/ledger/:customerId" element={<CustomerLedgerView />} />
+                  <Route path="accounting/offline-sales" element={<OfflineSales />} />
+                  <Route path="accounting/money-receipt" element={<MoneyReceipt />} />
+                  <Route path="accounting/reports" element={<AccountingReports />} />
                 </Route>
               </Route>
             </Routes>

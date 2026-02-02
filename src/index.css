@@ -58,3 +58,19 @@ body {
     display: none !important;
   }
 }
+  /* Ledger Statement Print Styles */
+  .ledger-print-container {
+    visibility: visible !important;
+  }
+
+  .ledger-print-container table {
+    border-collapse: collapse !important;
+    font-size: 10pt !important;
+  }
+
+  .ledger-print-container th,
+  .ledger-print-container td {
+    padding: 6px 4px !important;
+    border: 1px solid #ddd !important;
+  }
+
