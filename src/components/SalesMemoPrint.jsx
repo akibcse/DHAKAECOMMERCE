@@ -17,7 +17,7 @@ const SalesMemoPrint = ({ order }) => {
     if (!order) return null;
 
     return createPortal(
-        <div className="print-only-container w-full bg-white text-black p-8 hidden print:block">
+        <div className="print-only-container w-full bg-white text-black p-8 hidden print:block print:fixed print:top-0 print:left-0 print:w-full print:h-full print:z-[9999] overflow-y-auto">
             {/* Header */}
             <div className="flex justify-between items-start border-b-2 border-black pb-6 mb-6">
                 <div>

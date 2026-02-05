@@ -9,7 +9,13 @@ const Customers = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [showModal, setShowModal] = useState(false);
-    const [newCustomer, setNewCustomer] = useState({ name: "", phone: "", address: "", openingBalance: 0 });
+    const [newCustomer, setNewCustomer] = useState({
+        name: "",
+        phone: "",
+        email: "",
+        address: "",
+        openingBalance: ""
+    });
 
     useEffect(() => {
         loadCustomers();
@@ -151,6 +157,16 @@ const Customers = () => {
                                     className="w-full px-4 py-2 border rounded-xl"
                                     value={newCustomer.phone}
                                     onChange={e => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Email (Optional)</label>
+                                <input
+                                    type="email"
+                                    className="w-full px-4 py-2 border rounded-xl"
+                                    value={newCustomer.email}
+                                    onChange={e => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                                    placeholder="customer@example.com"
                                 />
                             </div>
                             <div>

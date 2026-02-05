@@ -39,6 +39,8 @@ import AccountingDashboard from "./pages/admin/accounting/AccountingDashboard";
 import Customers from "./pages/admin/accounting/Customers";
 import OfflineSales from "./pages/admin/accounting/OfflineSales";
 import MoneyReceipt from "./pages/admin/accounting/MoneyReceipt";
+import MoneyReceiptList from "./pages/admin/accounting/MoneyReceiptList";
+import SalesHistory from "./pages/admin/accounting/SalesHistory";
 import AccountingReports from "./pages/admin/accounting/AccountingReports";
 import CustomerLedgerView from "./pages/admin/accounting/CustomerLedgerView";
 
@@ -90,6 +92,8 @@ function App() {
                   <Route path="accounting/ledger/:customerId" element={<CustomerLedgerView />} />
                   <Route path="accounting/offline-sales" element={<OfflineSales />} />
                   <Route path="accounting/money-receipt" element={<MoneyReceipt />} />
+                  <Route path="accounting/receipts-history" element={<MoneyReceiptList />} />
+                  <Route path="accounting/sales-history" element={<SalesHistory />} />
                   <Route path="accounting/reports" element={<AccountingReports />} />
                 </Route>
               </Route>

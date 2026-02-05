@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getCustomerAccounts, createOfflineSale } from "../../../utils/accountingServices";
 import { toast } from "react-hot-toast";
+import SuccessModal from "../../../components/SuccessModal";
 
 const OfflineSales = () => {
     const [customers, setCustomers] = useState([]);
@@ -17,6 +18,10 @@ const OfflineSales = () => {
 
     // Simple item adder state
     const [currentItem, setCurrentItem] = useState({ name: "", price: 0, quantity: 1 });
+
+    // Success Modal State
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [lastSaleData, setLastSaleData] = useState(null);
 
     useEffect(() => {
         loadCustomers();
@@ -68,7 +73,18 @@ const OfflineSales = () => {
 
         try {
             await createOfflineSale(saleData);
-            toast.success("Offline Sale Recorded Successfully");
+
+            // Prepare data for success modal
+            const successData = {
+                orderNumber: `OFF-${new Date().toISOString().slice(2, 8)}-new`, // In real app, get from response if possible or just show generic
+                netAmount: saleData.totalAmount - saleData.discount,
+                paidAmount: saleData.paidAmount,
+                dueAmount: (saleData.totalAmount - saleData.discount) - saleData.paidAmount
+            };
+
+            setLastSaleData(successData);
+            setShowSuccessModal(true);
+
             // Reset form
             setSaleData({
                 customerId: "",
@@ -88,7 +104,18 @@ const OfflineSales = () => {
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
+            <SuccessModal
+                isOpen={showSuccessModal}
+                onClose={() => setShowSuccessModal(false)}
+                data={lastSaleData}
+                type="sale"
+            />
             <div>
+                <div className="mb-2">
+                    <a href="/admin/accounting" className="text-gray-500 hover:text-primary flex items-center gap-2 text-sm">
+                        &larr; Back to Dashboard
+                    </a>
+                </div>
                 <h1 className="text-2xl font-bold text-gray-800">New Offline Sale</h1>
                 <p className="text-gray-500">Record a manual sale entry for accounting</p>
             </div>

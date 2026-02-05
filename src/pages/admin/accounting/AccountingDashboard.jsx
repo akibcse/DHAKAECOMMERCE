@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { BsPeople, BsCartPlus, BsCashCoin, BsFileText, BsArrowRight } from "react-icons/bs";
+import { BsPeople, BsCartPlus, BsCashCoin, BsFileText, BsArrowRight, BsReceipt, BsJournalText, BsClockHistory } from "react-icons/bs";
 
 const AccountingDashboard = () => {
     const cards = [
@@ -40,23 +40,66 @@ const AccountingDashboard = () => {
                 <p className="text-gray-500 mt-2">Manage finances, ledgers, and manual transactions.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {cards.map((card, idx) => (
-                    <Link
-                        key={idx}
-                        to={card.path}
-                        className="group bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-                    >
-                        <div className={`w-12 h-12 ${card.color} text-white rounded-xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
-                            {card.icon}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <Link to="/admin/accounting/offline-sales" className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all group">
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:scale-110 transition-transform">
+                            <BsCartPlus size={24} />
                         </div>
-                        <h3 className="text-lg font-bold text-gray-800 mb-1">{card.title}</h3>
-                        <p className="text-sm text-gray-400 mb-4">{card.desc}</p>
-                        <div className="flex items-center text-sm font-semibold text-primary group-hover:gap-2 transition-all">
-                            Open <BsArrowRight className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <h3 className="font-bold text-gray-800">New Offline Sale</h3>
+                    </div>
+                    <p className="text-sm text-gray-500">Record a manual sale entry</p>
+                </Link>
+
+                <Link to="/admin/accounting/money-receipt" className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all group">
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="p-3 bg-green-50 text-green-600 rounded-xl group-hover:scale-110 transition-transform">
+                            <BsReceipt size={24} />
                         </div>
-                    </Link>
-                ))}
+                        <h3 className="font-bold text-gray-800">New Money Receipt</h3>
+                    </div>
+                    <p className="text-sm text-gray-500">Receive payment from customer</p>
+                </Link>
+
+                <Link to="/admin/accounting/sales-history" className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all group">
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="p-3 bg-purple-50 text-purple-600 rounded-xl group-hover:scale-110 transition-transform">
+                            <BsJournalText size={24} />
+                        </div>
+                        <h3 className="font-bold text-gray-800">Sales History</h3>
+                    </div>
+                    <p className="text-sm text-gray-500">View all sales records</p>
+                </Link>
+
+                <Link to="/admin/accounting/receipts-history" className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all group">
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="p-3 bg-teal-50 text-teal-600 rounded-xl group-hover:scale-110 transition-transform">
+                            <BsClockHistory size={24} />
+                        </div>
+                        <h3 className="font-bold text-gray-800">Receipts History</h3>
+                    </div>
+                    <p className="text-sm text-gray-500">View payment history</p>
+                </Link>
+
+                <Link to="/admin/accounting/customers" className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all group">
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="p-3 bg-orange-50 text-orange-600 rounded-xl group-hover:scale-110 transition-transform">
+                            <BsPeople size={24} />
+                        </div>
+                        <h3 className="font-bold text-gray-800">Customer Accounts</h3>
+                    </div>
+                    <p className="text-sm text-gray-500">View ledgers, dues & balances</p>
+                </Link>
+
+                <Link to="/admin/accounting/reports" className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all group">
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="p-3 bg-red-50 text-red-600 rounded-xl group-hover:scale-110 transition-transform">
+                            <BsFileText size={24} />
+                        </div>
+                        <h3 className="font-bold text-gray-800">Reports & Export</h3>
+                    </div>
+                    <p className="text-sm text-gray-500">Tally CSV, Sales Register & more</p>
+                </Link>
             </div>
 
             <div className="bg-blue-50 border border-blue-100 p-6 rounded-2xl">

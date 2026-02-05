@@ -93,10 +93,10 @@ const CustomerLedgerView = () => {
                         <tr>
                             <th className="px-4 py-3 text-left font-semibold text-gray-600">Date</th>
                             <th className="px-4 py-3 text-left font-semibold text-gray-600">Type</th>
-                            <th className="px-4 py-3 text-left font-semibold text-gray-600">Description</th>
-                            <th className="px-4 py-3 text-right font-semibold text-gray-600">Sale</th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-600">Reference</th>
+                            <th className="px-4 py-3 text-right font-semibold text-gray-600">Sale Amount</th>
                             <th className="px-4 py-3 text-right font-semibold text-gray-600">Payment</th>
-                            <th className="px-4 py-3 text-right font-semibold text-gray-600">Due</th>
+                            <th className="px-4 py-3 text-right font-semibold text-gray-600">Due After</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -104,7 +104,7 @@ const CustomerLedgerView = () => {
                         <tr className="bg-blue-50">
                             <td className="px-4 py-3 text-gray-600">{new Date(customer.createdAt).toLocaleDateString()}</td>
                             <td className="px-4 py-3 font-semibold">Opening</td>
-                            <td className="px-4 py-3 text-gray-600">Opening Due</td>
+                            <td className="px-4 py-3 text-gray-600">Opening Balance</td>
                             <td className="px-4 py-3 text-right">-</td>
                             <td className="px-4 py-3 text-right">-</td>
                             <td className="px-4 py-3 text-right font-bold">৳{customer.openingBalance}</td>
@@ -128,12 +128,12 @@ const CustomerLedgerView = () => {
                                             {entry.type === 'DEBIT' ? 'Sale' : 'Payment'}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 text-gray-600 text-xs">{entry.description}</td>
-                                    <td className="px-4 py-3 text-right font-semibold text-red-600">
-                                        {entry.type === 'DEBIT' ? `৳${entry.amount}` : '-'}
+                                    <td className="px-4 py-3 text-gray-600 text-xs font-mono">{entry.description}</td>
+                                    <td className="px-4 py-3 text-right font-semibold text-gray-600">
+                                        {entry.type === 'DEBIT' ? `৳${entry.amount}` : '–'}
                                     </td>
                                     <td className="px-4 py-3 text-right font-semibold text-green-600">
-                                        {entry.type === 'CREDIT' ? `৳${entry.amount}` : '-'}
+                                        {entry.type === 'CREDIT' ? `৳${entry.amount}` : '–'}
                                     </td>
                                     <td className={`px-4 py-3 text-right font-bold ${entry.runningBalance > 0 ? 'text-red-500' : 'text-green-500'
                                         }`}>

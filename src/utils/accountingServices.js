@@ -1,6 +1,7 @@
 import { ref, push, set, get, update, runTransaction, query, orderByChild, equalTo } from "firebase/database";
 import { db, auth } from "../firebase/firebase";
 import { createAuditLog } from "./dbServices"; // Reuse existing audit log
+import { sendOrderConfirmation, sendAdminOrderAlert, sendPaymentConfirmation } from "../services/emailService";
 
 // --- Accounts ---
 
@@ -13,6 +14,7 @@ export const createCustomerAccount = async (customerData) => {
             id: accountId,
             name: customerData.name,
             phone: customerData.phone,
+            email: customerData.email || "", // Add email field
             address: customerData.address || "",
             openingBalance: Number(customerData.openingBalance || 0),
             currentBalance: Number(customerData.openingBalance || 0), // Positive = Due, Negative = Advance
@@ -279,6 +281,25 @@ export const createOfflineSale = async (saleData) => {
         }
 
         await createAuditLog('OFFLINE_SALE_CREATE', { saleId, orderNumber }, 'sale', saleId);
+
+        // Send email notifications (non-blocking)
+        try {
+            const customer = await getAccountById(saleData.customerId);
+            console.log('📧 Checking customer for email notification:', customer?.name, customer?.email);
+
+            if (customer && customer.email) {
+                // Send order confirmation to customer
+                console.log('📧 Sending order confirmation to:', customer.email);
+                sendOrderConfirmation(saleEntry, customer.email, customer.name);
+                // Send admin alert
+                sendAdminOrderAlert(saleEntry, customer.name);
+            } else {
+                console.log('⚠️ Skipping email: Customer has no email address');
+            }
+        } catch (emailError) {
+            console.error('Email notification failed (non-blocking):', emailError);
+        }
+
         return saleId;
 
     } catch (error) {
@@ -341,6 +362,18 @@ export const createMoneyReceipt = async (receiptData) => {
         });
 
         await createAuditLog('RECEIPT_CREATE', { receiptId, receiptNo }, 'receipt', receiptId);
+
+        // Send payment confirmation email (non-blocking)
+        try {
+            const customer = await getAccountById(receiptData.customerId);
+            if (customer && customer.email) {
+                const currentDue = await calculateCustomerBalance(receiptData.customerId);
+                sendPaymentConfirmation(receiptEntry, customer.email, customer.name, currentDue);
+            }
+        } catch (emailError) {
+            console.error('Payment email failed (non-blocking):', emailError);
+        }
+
         return receiptId;
 
     } catch (error) {
