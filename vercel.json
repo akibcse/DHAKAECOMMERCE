@@ -2,7 +2,7 @@
     "rewrites": [
         {
             "source": "/product/:productId",
-            "destination": "/api/og/:productId"
+            "destination": "/api/og?productId=:productId"
         },
         {
             "source": "/(.*)",
