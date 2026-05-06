@@ -31,7 +31,7 @@ const MoneyReceiptList = () => {
             const timer = setTimeout(() => {
                 window.print();
                 setPrintData(null); // Reset to allow re-printing same receipt
-            }, 500);
+            }, 800);
             return () => clearTimeout(timer);
         }
     }, [printData]);
@@ -42,7 +42,7 @@ const MoneyReceiptList = () => {
             const timer = setTimeout(() => {
                 window.print();
                 setPrintHistory(false);
-            }, 500);
+            }, 800);
             return () => clearTimeout(timer);
         }
     }, [printHistory]);
@@ -212,12 +212,16 @@ const MoneyReceiptList = () => {
                 </div>
             </div>
 
-            {/* Hidden Print Components */}
+            {/* Always Mounted Print Components - Visibility controlled by props/CSS */}
             <div ref={printRef}>
-                {printData && <MoneyReceiptPrint data={printData} />}
+                <MoneyReceiptPrint data={printData} isActive={!!printData} />
             </div>
-            {/* Full History Print Component - Conditionally rendered content, but component itself mounts portal if props passed */}
-            {printHistory && <MoneyReceiptHistoryPrint receipts={filteredReceipts} customers={customers} />}
+
+            <MoneyReceiptHistoryPrint
+                receipts={filteredReceipts}
+                customers={customers}
+                isActive={printHistory}
+            />
         </div>
     );
 };
