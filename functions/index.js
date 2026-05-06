@@ -108,12 +108,19 @@ exports.productMeta = functions.https.onRequest(async (req, res) => {
                 // Description priority: seo.description → description → default
                 ogDesc = p.seo?.description || p.description || DEFAULT_DESC;
 
-                // Image priority: seo.shareImage → images[0] → image → default
-                ogImage =
+                // Priority: seo.shareImage → product.image (primary URL field) → images[0] → default
+                // ✅ URL-based images only — no Firebase Storage dependency
+                const rawImg =
                     p.seo?.shareImage ||
-                    (Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : null) ||
                     p.image ||
+                    (Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : null) ||
                     DEFAULT_IMAGE;
+
+                // Only use the image if it's an absolute HTTPS URL
+                // relative paths / localhost URLs return 404 to crawlers
+                ogImage = (rawImg && (rawImg.startsWith("https://") || rawImg.startsWith("http://")))
+                    ? rawImg
+                    : DEFAULT_IMAGE;
 
                 // Price (for product: schema)
                 const price = p.discountPrice || p.price;

@@ -20,6 +20,13 @@ const Products = () => {
     const [imageURL, setImageURL] = useState("");
     const [isSaving, setIsSaving] = useState(false);
 
+    // Optional per-product SEO state (stored as product.seo.*)
+    const [seoTitle, setSeoTitle] = useState("");
+    const [seoDescription, setSeoDescription] = useState("");
+    const [seoShareImage, setSeoShareImage] = useState("");
+    const [seoKeywords, setSeoKeywords] = useState("");
+    const [showSeoFields, setShowSeoFields] = useState(false);
+
     useEffect(() => {
         fetchProducts();
     }, []);
@@ -48,7 +55,15 @@ const Products = () => {
                 description,
                 stock: Number(stock),
                 visibility,
-                image: imageURL
+                image: imageURL,
+                // seo sub-object — only included if at least one field is filled
+                // Does NOT replace product.image — it's a parallel override for sharing only
+                seo: {
+                    title: seoTitle.trim(),
+                    description: seoDescription.trim(),
+                    shareImage: seoShareImage.trim(),
+                    keywords: seoKeywords.trim()
+                }
             };
 
             if (editingProduct) {
@@ -76,6 +91,12 @@ const Products = () => {
         setStock(product.stock);
         setVisibility(product.visibility ?? true);
         setImageURL(product.image || "");
+        // Restore SEO fields if they exist
+        setSeoTitle(product.seo?.title || "");
+        setSeoDescription(product.seo?.description || "");
+        setSeoShareImage(product.seo?.shareImage || "");
+        setSeoKeywords(product.seo?.keywords || "");
+        setShowSeoFields(!!(product.seo?.title || product.seo?.shareImage));
         setShowModal(true);
     };
 
@@ -109,6 +130,11 @@ const Products = () => {
         setStock("");
         setVisibility(true);
         setImageURL("");
+        setSeoTitle("");
+        setSeoDescription("");
+        setSeoShareImage("");
+        setSeoKeywords("");
+        setShowSeoFields(false);
     };
 
     return (
@@ -126,6 +152,36 @@ const Products = () => {
                 </button>
             </div>
 
+            {/* ⚠️ Missing Image Warning Banner */}
+            {(() => {
+                const missing = products.filter(p => !p.image && !(p.images && p.images.length > 0));
+                if (missing.length === 0) return null;
+                return (
+                    <div className="mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
+                        <span className="text-2xl mt-0.5">⚠️</span>
+                        <div className="flex-1">
+                            <p className="text-sm font-bold text-amber-800">
+                                {missing.length} product{missing.length > 1 ? 's' : ''} missing image URL — social previews will show the default banner instead of the product image.
+                            </p>
+                            <p className="text-xs text-amber-700 mt-1">
+                                Click the ✏️ edit button on each highlighted product and paste a public image URL in the <strong>Product Image URL</strong> field.
+                            </p>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                                {missing.map(p => (
+                                    <button
+                                        key={p.id}
+                                        onClick={() => handleEdit(p)}
+                                        className="text-xs bg-amber-100 border border-amber-300 text-amber-800 px-3 py-1 rounded-full font-semibold hover:bg-amber-200 transition-colors"
+                                    >
+                                        {p.title?.slice(0, 24) || 'Unnamed product'}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
             {loading ? (
                 <div className="flex justify-center items-center py-20">
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -142,6 +198,7 @@ const Products = () => {
                                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Price</th>
                                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Stock</th>
                                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Status</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">OG Image</th>
                                     <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-widest">Actions</th>
                                 </tr>
                             </thead>
@@ -191,6 +248,29 @@ const Products = () => {
                                                 {product.visibility !== false ? 'Visible' : 'Hidden'}
                                             </button>
                                         </td>
+                                        {/* OG Image status */}
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            {product.image || (product.images && product.images[0]) ? (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="h-8 w-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-100">
+                                                        <img
+                                                            src={product.image || product.images[0]}
+                                                            alt=""
+                                                            className="h-full w-full object-cover"
+                                                            onError={e => { e.target.parentNode.classList.add("opacity-30"); }}
+                                                        />
+                                                    </div>
+                                                    <span className="text-[10px] text-green-600 font-bold">✓ Set</span>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleEdit(product)}
+                                                    className="flex items-center gap-1 px-2 py-1 bg-red-50 text-red-600 text-[10px] font-bold rounded-lg border border-red-100 hover:bg-red-100 transition-colors"
+                                                >
+                                                    ⚠ Missing
+                                                </button>
+                                            )}
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div className="flex justify-end gap-2">
                                                 <button
@@ -238,7 +318,7 @@ const Products = () => {
                                         ৳{product.price}
                                     </div>
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 flex-wrap">
                                     <button
                                         onClick={() => toggleVisibility(product)}
                                         className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase transition-all flex-1 justify-center border ${product.visibility !== false
@@ -249,6 +329,17 @@ const Products = () => {
                                         {product.visibility !== false ? <BsEye size={14} /> : <BsEyeSlash size={14} />}
                                         {product.visibility !== false ? 'Visible' : 'Hidden'}
                                     </button>
+
+                                    {/* OG image missing badge — mobile */}
+                                    {!product.image && !(product.images && product.images[0]) && (
+                                        <button
+                                            onClick={() => handleEdit(product)}
+                                            className="flex items-center gap-1 px-3 py-2 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-xl border border-amber-200 hover:bg-amber-100 transition-colors"
+                                        >
+                                            ⚠ No Image
+                                        </button>
+                                    )}
+
                                     <div className="flex gap-2">
                                         <button
                                             onClick={() => handleEdit(product)}
@@ -383,6 +474,90 @@ const Products = () => {
                                             className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl focus:ring-2 focus:ring-primary/20 transition-all font-medium h-32"
                                             value={description} onChange={e => setDescription(e.target.value)}
                                         ></textarea>
+                                    </div>
+
+                                    {/* ── Optional Social / SEO Fields ───────────────── */}
+                                    <div className="border border-dashed border-gray-200 rounded-2xl overflow-hidden">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowSeoFields(v => !v)}
+                                            className="w-full flex items-center justify-between px-5 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+                                        >
+                                            <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                                                📣 Social Sharing / SEO Override
+                                                <span className="ml-2 text-[10px] font-normal normal-case text-gray-400">(optional — does not affect product image)</span>
+                                            </span>
+                                            <span className="text-gray-400 text-xs">{showSeoFields ? "▲ Hide" : "▼ Show"}</span>
+                                        </button>
+
+                                        {showSeoFields && (
+                                            <div className="p-5 space-y-4 bg-white">
+                                                <p className="text-[11px] text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
+                                                    These fields override the social preview title, description, and share image on Facebook, WhatsApp, Telegram, etc.
+                                                    The product image URL above is still used for the store listing.
+                                                </p>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1 ml-1">Social Title</label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="e.g. Best Running Shoes in BD"
+                                                            className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl focus:ring-2 focus:ring-primary/20 transition-all font-medium text-sm"
+                                                            value={seoTitle}
+                                                            onChange={e => setSeoTitle(e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1 ml-1">Keywords</label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="shoes, running, nike"
+                                                            className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl focus:ring-2 focus:ring-primary/20 transition-all font-medium text-sm"
+                                                            value={seoKeywords}
+                                                            onChange={e => setSeoKeywords(e.target.value)}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1 ml-1">Social Description</label>
+                                                    <textarea
+                                                        placeholder="Short punchy description for WhatsApp/Facebook previews..."
+                                                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl focus:ring-2 focus:ring-primary/20 transition-all font-medium text-sm h-20 resize-none"
+                                                        value={seoDescription}
+                                                        onChange={e => setSeoDescription(e.target.value)}
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1 ml-1">
+                                                        Custom Share Image URL
+                                                        <span className="ml-1 text-[10px] font-normal normal-case text-gray-400">(1200×630 recommended)</span>
+                                                    </label>
+                                                    <input
+                                                        type="url"
+                                                        placeholder="https://example.com/social-banner.jpg"
+                                                        className="w-full bg-gray-50 border-none px-4 py-3 rounded-xl focus:ring-2 focus:ring-primary/20 transition-all font-medium text-sm"
+                                                        value={seoShareImage}
+                                                        onChange={e => setSeoShareImage(e.target.value)}
+                                                    />
+                                                    {seoShareImage && (
+                                                        <div className="mt-3 aspect-video max-h-32 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden">
+                                                            <img
+                                                                src={seoShareImage}
+                                                                className="w-full h-full object-cover"
+                                                                alt="Share image preview"
+                                                                onError={e => { e.target.style.display = "none"; }}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    <p className="text-[10px] text-gray-400 mt-1">
+                                                        Leave blank to use the product image URL above for social previews.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
