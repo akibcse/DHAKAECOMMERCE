@@ -24,7 +24,7 @@ const ProductSEO = ({ product }) => {
 
     // Fallback image must ALWAYS be an absolute HTTPS URL that crawlers can reach.
     // Never use a relative path or localhost — they return 404 to external validators.
-    const DEPLOYED_OG_IMAGE = "https://dhakaecommerce-86c3c.web.app/og-default.jpg";
+    const DEPLOYED_OG_IMAGE = "https://dhakaecommerce-86c3c.web.app/og-default.png";
     const defaultImg =
         settings?.seo?.defaultShareImage  // admin-set site fallback (absolute URL)
         || DEPLOYED_OG_IMAGE;             // guaranteed to exist after deploy
