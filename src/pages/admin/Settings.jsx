@@ -53,6 +53,7 @@ const Settings = () => {
         { id: "branding", label: "Branding" },
         { id: "theme", label: "Theme & Colors" },
         { id: "seo", label: "SEO Settings" },
+        { id: "social", label: "📣 Social Sharing" },
         { id: "features", label: "Feature Toggles" }
     ];
 
@@ -223,6 +224,80 @@ const Settings = () => {
                                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                                 placeholder="comma, separated, keywords"
                             />
+                        </div>
+                    </div>
+                )}
+
+                {/* Social Sharing Section */}
+                {activeTab === "social" && (
+                    <div className="space-y-6 max-w-2xl">
+                        <h2 className="text-lg font-semibold mb-1">Social Sharing Defaults</h2>
+                        <p className="text-sm text-gray-500 mb-4">
+                            These values are used as fallbacks when a product has no custom social metadata.
+                            Individual product SEO fields (title, description, share image) always take priority.
+                        </p>
+
+                        {/* Default Share Image */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Default OG / Share Image URL
+                            </label>
+                            <input
+                                type="text"
+                                value={localSettings.seo?.defaultShareImage || ""}
+                                onChange={(e) => handleChange("seo", "defaultShareImage", e.target.value)}
+                                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                placeholder="https://yourdomain.com/og-default.jpg"
+                            />
+                            <p className="text-xs text-gray-400 mt-1">Recommended size: 1200 × 630 px. Must be a publicly accessible URL.</p>
+                        </div>
+
+                        {/* Preview */}
+                        {localSettings.seo?.defaultShareImage && (
+                            <div className="border rounded-xl overflow-hidden shadow-sm">
+                                <p className="text-xs font-semibold text-gray-500 px-3 py-2 bg-gray-50 border-b">Preview</p>
+                                <img
+                                    src={localSettings.seo.defaultShareImage}
+                                    alt="OG Preview"
+                                    className="w-full object-cover max-h-48"
+                                    onError={(e) => { e.target.style.display = "none"; }}
+                                />
+                            </div>
+                        )}
+
+                        {/* Per-product instructions */}
+                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                            <p className="text-sm font-semibold text-blue-800 mb-2">💡 Per-Product SEO Override</p>
+                            <p className="text-xs text-blue-700">
+                                To set custom social metadata for a specific product, add a <code className="bg-blue-100 px-1 rounded">seo</code> field
+                                to the product in Firebase with these keys:
+                            </p>
+                            <ul className="mt-2 space-y-1 text-xs text-blue-700 list-disc ml-4">
+                                <li><code className="bg-blue-100 px-1 rounded">seo.title</code> — overrides OG title</li>
+                                <li><code className="bg-blue-100 px-1 rounded">seo.description</code> — overrides OG description</li>
+                                <li><code className="bg-blue-100 px-1 rounded">seo.shareImage</code> — overrides OG image (1200×630)</li>
+                                <li><code className="bg-blue-100 px-1 rounded">seo.keywords</code> — product page keywords</li>
+                            </ul>
+                        </div>
+
+                        {/* Validator links */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <a
+                                href="https://developers.facebook.com/tools/debug/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 px-4 py-3 bg-[#1877F2] text-white rounded-xl text-sm font-semibold hover:bg-[#166FE5] transition-colors"
+                            >
+                                <span>🔵</span> Facebook OG Debugger
+                            </a>
+                            <a
+                                href="https://cards-dev.twitter.com/validator"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 px-4 py-3 bg-[#0F1419] text-white rounded-xl text-sm font-semibold hover:bg-[#272D33] transition-colors"
+                            >
+                                <span>🐦</span> Twitter Card Validator
+                            </a>
                         </div>
                     </div>
                 )}

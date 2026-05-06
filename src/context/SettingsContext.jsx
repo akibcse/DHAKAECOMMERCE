@@ -22,7 +22,8 @@ export const SettingsProvider = ({ children }) => {
         seo: {
             defaultTitle: "DhakaEcommerce",
             defaultDescription: "Buy products online in Bangladesh",
-            defaultKeywords: "dhaka ecommerce, online shopping"
+            defaultKeywords: "dhaka ecommerce, online shopping",
+            defaultShareImage: "" // Fallback OG image for social previews
         },
         features: {
             wallet: true,
@@ -97,7 +98,8 @@ export const SettingsProvider = ({ children }) => {
             seo: {
                 defaultTitle: "DhakaEcommerce",
                 defaultDescription: "Buy products online in Bangladesh",
-                defaultKeywords: "dhaka ecommerce, online shopping"
+                defaultKeywords: "dhaka ecommerce, online shopping",
+                defaultShareImage: ""
             },
             features: {
                 wallet: true,

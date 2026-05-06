@@ -5,6 +5,8 @@ import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
 import { BsCartPlus, BsLightningCharge, BsArrowLeft, BsTruck, BsShieldCheck, BsArrowRepeat } from "react-icons/bs";
 import AIRecommendations from "../../components/AIRecommendations";
+import ProductSEO from "../../components/common/ProductSEO";
+import ShareButtons from "../../components/ShareButtons";
 
 const ProductDetails = () => {
     const { id } = useParams();
@@ -38,6 +40,9 @@ const ProductDetails = () => {
 
     return (
         <div className="pb-24 md:pb-8">
+            {/* Dynamic SEO / Open Graph meta tags */}
+            <ProductSEO product={product} />
+
             {/* Back Button for Mobile */}
             <button
                 onClick={() => navigate(-1)}
@@ -89,12 +94,15 @@ const ProductDetails = () => {
                             )}
                         </div>
 
-                        <div className="prose prose-sm text-gray-600 mb-8 max-w-none">
+                        <div className="prose prose-sm text-gray-600 mb-6 max-w-none">
                             <p>{product.description}</p>
                         </div>
 
+                        {/* Share Buttons */}
+                        <ShareButtons product={product} />
+
                         {/* Desktop Actions */}
-                        <div className="hidden md:flex items-center gap-4 mt-auto">
+                        <div className="hidden md:flex items-center gap-4 mt-8">
                             <button
                                 onClick={() => addToCart(product)}
                                 disabled={product.stock <= 0}
@@ -133,6 +141,7 @@ const ProductDetails = () => {
                     </button>
                 </div>
             </div>
+
             {/* AI Recommendations */}
             <div className="mt-12 px-4 md:px-0 space-y-20">
                 <AIRecommendations

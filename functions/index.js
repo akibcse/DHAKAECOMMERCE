@@ -1,28 +1,227 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const https = require("https");
 admin.initializeApp();
 
 const db = admin.database();
 const messaging = admin.messaging();
 
+// ---------------------------------------------------------------------------
+// HELPERS
+// ---------------------------------------------------------------------------
+
+function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+/** Known social-media / SEO crawler user-agent substrings */
+const CRAWLER_AGENTS = [
+    "facebookexternalhit",
+    "facebot",
+    "twitterbot",
+    "whatsapp",
+    "telegrambot",
+    "linkedinbot",
+    "slackbot",
+    "discordbot",
+    "googlebot",
+    "bingbot",
+    "applebot",
+    "pinterest",
+    "vkshare",
+    "w3c_validator",
+    "ia_archiver",
+];
+
+function isCrawler(userAgent = "") {
+    const ua = userAgent.toLowerCase();
+    return CRAWLER_AGENTS.some((bot) => ua.includes(bot));
+}
+
+/** Fetch a URL and return the response body as a string */
+function fetchHtml(url) {
+    return new Promise((resolve, reject) => {
+        https
+            .get(url, { headers: { "User-Agent": "dhakaecommerce-function/1.0" } }, (res) => {
+                let data = "";
+                res.on("data", (chunk) => (data += chunk));
+                res.on("end", () => resolve(data));
+                res.on("error", reject);
+            })
+            .on("error", reject);
+    });
+}
+
+// ---------------------------------------------------------------------------
+// productMeta — SSR-like OG tag injection for /product/:id
+// ---------------------------------------------------------------------------
 /**
- * Triggered on Order Update
- * Sends notifications on status or payment changes
+ * Intercepts requests to /product/** from Firebase Hosting.
+ * For social-media crawlers   → returns a minimal HTML page with full OG tags.
+ * For regular browsers        → fetches the SPA shell, injects OG tags, and
+ *                               returns it so React can hydrate normally.
+ *
+ * This ensures rich previews on Facebook, WhatsApp, Telegram, Twitter, etc.
+ * while keeping the full React SPA experience for human visitors.
  */
+exports.productMeta = functions.https.onRequest(async (req, res) => {
+    // Cache for 5 min at edge, 10 min at CDN
+    res.set("Cache-Control", "public, max-age=300, s-maxage=600");
+
+    // ── 1. Extract productId from path (/product/<id>) ──────────────────────
+    const pathParts = req.path.split("/").filter(Boolean);
+    // pathParts = ['product', '<id>']
+    const productId = pathParts[1] || null;
+
+    // ── 2. Site-level defaults ───────────────────────────────────────────────
+    // Use the project's default hosting URL for internal SPA fetches
+    const HOSTING_URL   = "https://dhakaecommerce-86c3c.web.app";
+    const SITE_NAME     = "DhakaEcommerce";
+    const DEFAULT_TITLE = `${SITE_NAME} — Online Shopping in Bangladesh`;
+    const DEFAULT_DESC  = "Buy authentic products online in Bangladesh with fast delivery.";
+    const DEFAULT_IMAGE = `${HOSTING_URL}/og-default.jpg`;
+
+    // Resolved values (will be overwritten from Firebase)
+    let ogTitle   = DEFAULT_TITLE;
+    let ogDesc    = DEFAULT_DESC;
+    let ogImage   = DEFAULT_IMAGE;
+    let ogPrice   = "";
+    const ogUrl   = `${HOSTING_URL}/product/${productId || ""}`;
+
+    // ── 3. Fetch product from Firebase RTDB ─────────────────────────────────
+    try {
+        if (productId) {
+            const snap = await db.ref(`products/${productId}`).once("value");
+
+            if (snap.exists()) {
+                const p = snap.val();
+
+                // Title priority: seo.title → title → default
+                ogTitle = p.seo?.title || p.title || DEFAULT_TITLE;
+
+                // Description priority: seo.description → description → default
+                ogDesc = p.seo?.description || p.description || DEFAULT_DESC;
+
+                // Image priority: seo.shareImage → images[0] → image → default
+                ogImage =
+                    p.seo?.shareImage ||
+                    (Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : null) ||
+                    p.image ||
+                    DEFAULT_IMAGE;
+
+                // Price (for product: schema)
+                const price = p.discountPrice || p.price;
+                if (price) ogPrice = String(price);
+            }
+        }
+    } catch (err) {
+        console.error("[productMeta] Firebase fetch error:", err);
+        // Fall through with defaults — never crash for crawlers
+    }
+
+    // ── 4. Build the OG meta block ──────────────────────────────────────────
+    const safeTitle = escapeHtml(ogTitle);
+    const safeDesc  = escapeHtml(ogDesc);
+    const safeImg   = escapeHtml(ogImage);
+    const fullTitle = `${safeTitle} | ${escapeHtml(SITE_NAME)}`;
+
+    const ogBlock = `
+    <!-- Injected by productMeta Cloud Function -->
+    <title>${fullTitle}</title>
+    <meta name="description" content="${safeDesc}" />
+
+    <!-- Open Graph -->
+    <meta property="og:type"              content="product" />
+    <meta property="og:site_name"         content="${escapeHtml(SITE_NAME)}" />
+    <meta property="og:title"             content="${safeTitle}" />
+    <meta property="og:description"       content="${safeDesc}" />
+    <meta property="og:url"               content="${escapeHtml(ogUrl)}" />
+    <meta property="og:image"             content="${safeImg}" />
+    <meta property="og:image:secure_url"  content="${safeImg}" />
+    <meta property="og:image:width"       content="1200" />
+    <meta property="og:image:height"      content="630" />
+    <meta property="og:image:alt"         content="${safeTitle}" />
+    ${ogPrice ? `<meta property="product:price:amount"   content="${ogPrice}" />` : ""}
+    <meta property="product:price:currency" content="BDT" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:title"       content="${safeTitle}" />
+    <meta name="twitter:description" content="${safeDesc}" />
+    <meta name="twitter:image"       content="${safeImg}" />
+    <meta name="twitter:image:alt"   content="${safeTitle}" />
+
+    <!-- Canonical -->
+    <link rel="canonical" href="${escapeHtml(ogUrl)}" />
+    <!-- End injection -->`;
+
+    // ── 5a. Crawler → return lightweight OG HTML (no JS) ───────────────────
+    if (isCrawler(req.headers["user-agent"])) {
+        const crawlerHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  ${ogBlock}
+</head>
+<body>
+  <h1>${safeTitle}</h1>
+  <p>${safeDesc}</p>
+  ${ogPrice ? `<p>Price: ৳${ogPrice}</p>` : ""}
+  <a href="${escapeHtml(ogUrl)}">View Product</a>
+</body>
+</html>`;
+
+        res.set("Content-Type", "text/html; charset=utf-8");
+        return res.status(200).send(crawlerHtml);
+    }
+
+    // ── 5b. Regular browser → fetch SPA shell, inject OG, return full app ──
+    try {
+        // Fetch the root index.html (not /product/... to avoid rewrite loop)
+        let spaHtml = await fetchHtml(`${HOSTING_URL}/`);
+
+        // Remove the default <title> so our injected one takes over
+        spaHtml = spaHtml.replace(/<title>[^<]*<\/title>/i, "");
+
+        // Inject OG block immediately after <head>
+        if (spaHtml.includes("<head>")) {
+            spaHtml = spaHtml.replace("<head>", `<head>\n${ogBlock}`);
+        } else {
+            // Fallback: prepend to document
+            spaHtml = `<!DOCTYPE html><html><head>${ogBlock}</head><body></body></html>`;
+        }
+
+        res.set("Content-Type", "text/html; charset=utf-8");
+        return res.status(200).send(spaHtml);
+    } catch (fetchErr) {
+        console.error("[productMeta] SPA fetch error:", fetchErr);
+
+        // Last resort: redirect browser to the live site
+        return res.redirect(302, ogUrl);
+    }
+});
+
+// ---------------------------------------------------------------------------
+// onOrderUpdate — notifications on order status / payment change
+// ---------------------------------------------------------------------------
 exports.onOrderUpdate = functions.database.ref("/orders/{orderId}")
     .onWrite(async (change, context) => {
-        const orderId = context.params.orderId;
+        const orderId   = context.params.orderId;
         const beforeData = change.before.val();
-        const afterData = change.after.val();
+        const afterData  = change.after.val();
 
-        // If order was deleted
         if (!afterData) {
             console.log(`Order ${orderId} deleted.`);
-            // Optionally notify user about cancellation if not done yet
             return null;
         }
 
-        // 1. Get User/Admin Tokens
         const userId = afterData.userId;
         const [tokenSnapshot, adminSnapshot] = await Promise.all([
             db.ref(`fcmTokens/${userId}`).once("value"),
@@ -31,7 +230,6 @@ exports.onOrderUpdate = functions.database.ref("/orders/{orderId}")
 
         const userTokens = tokenSnapshot.exists() ? Object.keys(tokenSnapshot.val()) : [];
 
-        // Collect all admin tokens
         let adminTokens = [];
         if (adminSnapshot.exists()) {
             const admins = adminSnapshot.val();
@@ -53,7 +251,6 @@ exports.onOrderUpdate = functions.database.ref("/orders/{orderId}")
                 await sendPush(adminTokens, "New Order Alert", `Order #${orderNum} has been placed.`);
             }
 
-            // Email Admin
             await sendEmail("admin@dhakaecommerce.com", `New Order #${orderNum}`, `
                 <div style="font-family: sans-serif; padding: 20px; color: #333;">
                     <h2 style="color: #000;">New Order Received!</h2>
@@ -65,7 +262,6 @@ exports.onOrderUpdate = functions.database.ref("/orders/{orderId}")
                 </div>
             `);
 
-            // Email Customer Confirmation
             await sendEmail(afterData.userEmail, `Order Confirmed - #${orderNum}`, `
                 <div style="font-family: sans-serif; padding: 20px; color: #333;">
                     <h2 style="color: #000;">Thank you for your order!</h2>
@@ -105,25 +301,22 @@ exports.onOrderUpdate = functions.database.ref("/orders/{orderId}")
         return null;
     });
 
-/**
- * Triggered on New Message
- * Sends notification to recipient
- */
+// ---------------------------------------------------------------------------
+// onNewMessage — notifications on new support messages
+// ---------------------------------------------------------------------------
 exports.onNewMessage = functions.database.ref("/messages/{orderId}/{messageId}")
     .onCreate(async (snapshot, context) => {
-        const orderId = context.params.orderId;
+        const orderId    = context.params.orderId;
         const messageData = snapshot.val();
-        const senderRole = messageData.senderRole;
+        const senderRole  = messageData.senderRole;
 
-        // Get Order Owner
         const orderSnapshot = await db.ref(`orders/${orderId}`).once("value");
         if (!orderSnapshot.exists()) return null;
-        const orderData = orderSnapshot.val();
+        const orderData   = orderSnapshot.val();
         const orderOwnerId = orderData.userId;
-        const orderNum = orderData.orderNumber || orderId.slice(-8);
+        const orderNum    = orderData.orderNumber || orderId.slice(-8);
 
         if (senderRole === "user") {
-            // Notify Admins
             const adminSnapshot = await db.ref("users").orderByChild("role").equalTo("admin").once("value");
             if (adminSnapshot.exists()) {
                 const admins = adminSnapshot.val();
@@ -137,14 +330,12 @@ exports.onNewMessage = functions.database.ref("/messages/{orderId}/{messageId}")
                 }
             }
         } else {
-            // Notify User
             const userTokenSnap = await db.ref(`fcmTokens/${orderOwnerId}`).once("value");
             if (userTokenSnap.exists()) {
                 const userTokens = Object.keys(userTokenSnap.val());
                 await sendPush(userTokens, "Shop Support", `A new message was sent regarding your order #${orderNum}`);
             }
 
-            // Email User for message (since they might be offline)
             await sendEmail(orderData.userEmail, "New Message from Support", `
                 <div style="font-family: sans-serif; padding: 20px; color: #333;">
                     <h2>New Support Message</h2>
@@ -158,9 +349,9 @@ exports.onNewMessage = functions.database.ref("/messages/{orderId}/{messageId}")
         return null;
     });
 
-/**
- * Helper to send Email via Brevo (Free Tier)
- */
+// ---------------------------------------------------------------------------
+// Helper: send email via Brevo
+// ---------------------------------------------------------------------------
 async function sendEmail(to, subject, htmlContent) {
     const BREVO_API_KEY = functions.config().brevo?.key || "YOUR_BREVO_API_KEY_HERE";
     if (BREVO_API_KEY === "YOUR_BREVO_API_KEY_HERE") {
@@ -186,7 +377,6 @@ async function sendEmail(to, subject, htmlContent) {
         const result = await response.json();
         console.log("Brevo Email Response:", result);
 
-        // Log to database
         await db.ref("notificationLogs").push({
             type: "email",
             recipient: to,
@@ -199,9 +389,9 @@ async function sendEmail(to, subject, htmlContent) {
     }
 }
 
-/**
- * Helper to send FCM message
- */
+// ---------------------------------------------------------------------------
+// Helper: send FCM push notification
+// ---------------------------------------------------------------------------
 async function sendPush(tokens, title, body) {
     if (!tokens || tokens.length === 0) return;
 
@@ -211,10 +401,9 @@ async function sendPush(tokens, title, body) {
     };
 
     try {
-        const response = await messaging.sendMulticast(message);
+        const response = await messaging.sendEachForMulticast(message);
         console.log(`Successfully sent ${response.successCount} messages; ${response.failureCount} messages failed.`);
 
-        // Log to database
         await db.ref("notificationLogs").push({
             type: "push",
             recipients: tokens.length,
