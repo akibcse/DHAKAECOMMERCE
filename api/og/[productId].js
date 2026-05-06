@@ -7,6 +7,31 @@ const DB_URL    = "https://dhakaecommerce-86c3c-default-rtdb.firebaseio.com";
 // Reliable fallback — always accessible, correct format
 const EXTERNAL_FALLBACK = "https://placehold.co/1200x630/006A4E/FFFFFF.png?text=DhakaEcommerce";
 
+/**
+ * If the URL is a Cloudinary image, automatically transform it to
+ * 1200×630 crop — perfect OG dimensions, no manual editing needed.
+ * Handles both /upload/... and /upload/v123456/... URL formats.
+ *
+ * Input:  https://res.cloudinary.com/demo/image/upload/sample.jpg
+ * Output: https://res.cloudinary.com/demo/image/upload/c_fill,w_1200,h_630,f_jpg,q_auto/sample.jpg
+ */
+function optimizeForOG(url) {
+    if (!url) return url;
+    // Match any Cloudinary upload URL
+    const match = url.match(/^(https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)(.+)$/);
+    if (!match) return url; // not Cloudinary — return as-is
+
+    const base        = match[1]; // .../image/upload/
+    const rest        = match[2]; // v12345/path.jpg  OR  path.jpg
+
+    // Strip any existing transformation segment (starts with letters like c_, w_, f_ etc.)
+    const cleanRest = rest.replace(/^[a-z_,/0-9]+\//, m =>
+        /^[a-z]_/.test(m.split(",")[0]) ? "" : m
+    );
+
+    return `${base}c_fill,w_1200,h_630,f_jpg,q_auto/${cleanRest}`;
+}
+
 function escapeHtml(s) {
     if (!s) return "";
     return String(s)
@@ -89,7 +114,7 @@ export default async function handler(req, res) {
                 product.image ||
                 (Array.isArray(product.images) && product.images.length ? product.images[0] : null);
 
-            if (candidate) ogImage = candidate;
+            if (candidate) ogImage = optimizeForOG(candidate);
 
             const p = product.discountPrice || product.price;
             if (p) ogPrice = String(p);
