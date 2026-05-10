@@ -82,7 +82,15 @@ const SalesMemoPrint = ({ order }) => {
                     <tbody className="divide-y-2 divide-gray-100">
                         {Object.values(order.items || {}).map((item, idx) => (
                             <tr key={idx}>
-                                <td className="py-5 text-[15px] font-black text-gray-900 leading-snug pr-8">{item.name}</td>
+                                <td className="py-5 pr-8">
+                                    <div className="text-[15px] font-black text-gray-900 leading-snug">{item.name}</div>
+                                    {(item.size || item.color) && (
+                                        <div className="flex gap-2 mt-1">
+                                            {item.size && <span className="text-[9px] font-black uppercase tracking-widest border-2 border-black px-1.5 rounded">Size: {item.size}</span>}
+                                            {item.color && <span className="text-[9px] font-black uppercase tracking-widest border-2 border-black px-1.5 rounded">Color: {item.color}</span>}
+                                        </div>
+                                    )}
+                                </td>
                                 <td className="py-5 text-center text-sm font-bold text-gray-600">{Number(item.discountPrice || item.price)}</td>
                                 <td className="py-5 text-center text-base font-black">{item.quantity}</td>
                                 <td className="py-5 text-right text-base font-black">৳{Number(item.lineTotal)}</td>

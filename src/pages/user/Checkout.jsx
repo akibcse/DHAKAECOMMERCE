@@ -93,7 +93,7 @@ const Checkout = () => {
             // Calculate how much they are paying now
             const amountToPay = payFull ? finalTotal : shippingFee;
 
-            // Map cart to items schema
+            // Map cart to items schema with variations
             const orderItems = {};
             cart.forEach((item, index) => {
                 orderItems[`item_${index}`] = {
@@ -102,7 +102,9 @@ const Checkout = () => {
                     price: item.price,
                     discountPrice: item.discountPrice || null,
                     quantity: item.quantity,
-                    lineTotal: (item.discountPrice || item.price) * item.quantity
+                    lineTotal: (item.discountPrice || item.price) * item.quantity,
+                    size: item.selectedVariations?.size || null,
+                    color: item.selectedVariations?.color || null
                 };
             });
 

@@ -372,6 +372,38 @@ export const validateCoupon = async (code, orderAmount) => {
     }
 };
 
+// --- Taxonomy (Categories & Sub-categories) ---
+
+export const getTaxonomy = async () => {
+    try {
+        const snapshot = await get(ref(db, 'taxonomy'));
+        return snapshot.exists() ? snapshot.val() : {};
+    } catch (error) {
+        console.error("Error fetching taxonomy:", error);
+        throw error;
+    }
+};
+
+export const saveTaxonomy = async (taxonomyData) => {
+    try {
+        await set(ref(db, 'taxonomy'), taxonomyData);
+        await createAuditLog('TAXONOMY_UPDATE', { taxonomyData });
+    } catch (error) {
+        console.error("Error saving taxonomy:", error);
+        throw error;
+    }
+};
+
+export const deleteTaxonomyCategory = async (categoryName) => {
+    try {
+        await remove(ref(db, `taxonomy/${categoryName}`));
+        await createAuditLog('TAXONOMY_CATEGORY_DELETE', { categoryName });
+    } catch (error) {
+        console.error("Error deleting category:", error);
+        throw error;
+    }
+};
+
 // --- Audit Logs ---
 
 export const createAuditLog = async (action, details, targetType = 'system', targetId = 'none') => {

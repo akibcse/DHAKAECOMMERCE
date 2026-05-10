@@ -33,6 +33,7 @@ import AdminCoupons from "./pages/admin/AdminCoupons";
 import AdvancedAnalytics from "./pages/admin/AdvancedAnalytics";
 import SalesReport from "./pages/admin/SalesReport";
 import Settings from "./pages/admin/Settings"; // [NEW]
+import Categories from "./pages/admin/Categories"; // [NEW]
 
 // Accounting Pages
 import AccountingDashboard from "./pages/admin/accounting/AccountingDashboard";
@@ -85,6 +86,7 @@ function App() {
                   <Route path="analytics" element={<AdvancedAnalytics />} />
                   <Route path="sales-report" element={<SalesReport />} />
                   <Route path="settings" element={<Settings />} />
+                  <Route path="categories" element={<Categories />} />
 
                   {/* Accounting Module Routes */}
                   <Route path="accounting" element={<AccountingDashboard />} />

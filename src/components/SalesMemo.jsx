@@ -115,7 +115,15 @@ const SalesMemo = ({ order, isOpen, onClose }) => {
                                     <tbody className="divide-y divide-gray-50">
                                         {Object.values(order.items || {}).map((item, idx) => (
                                             <tr key={idx} className="group hover:bg-gray-50/50 transition-all">
-                                                <td className="px-10 py-8 font-black text-gray-900 text-lg leading-tight">{item.name}</td>
+                                                <td className="px-10 py-8">
+                                                    <div className="font-black text-gray-900 text-lg leading-tight">{item.name}</div>
+                                                    {(item.size || item.color) && (
+                                                        <div className="flex gap-2 mt-1">
+                                                            {item.size && <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 px-2 py-0.5 rounded border border-gray-100">Size: {item.size}</span>}
+                                                            {item.color && <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-gray-50 px-2 py-0.5 rounded border border-gray-100">Color: {item.color}</span>}
+                                                        </div>
+                                                    )}
+                                                </td>
                                                 <td className="px-10 py-8 font-black text-center text-gray-900 text-lg">{item.quantity}</td>
                                                 <td className="px-10 py-8 font-black text-right text-gray-900 text-lg">৳{item.lineTotal}</td>
                                             </tr>

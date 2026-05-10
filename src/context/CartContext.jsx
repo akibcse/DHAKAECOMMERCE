@@ -16,34 +16,92 @@ export const CartProvider = ({ children }) => {
 
     const [isCartModalOpen, setIsCartModalOpen] = useState(false);
     const [lastAddedProduct, setLastAddedProduct] = useState(null);
+    const [lastAddedVariantKey, setLastAddedVariantKey] = useState(null);
+    const [lastAddedVariations, setLastAddedVariations] = useState({});
 
-    const addToCart = (product) => {
+    const addToCart = (product, selectedVariations = {}) => {
         setCart((prevCart) => {
-            const existingItem = prevCart.find((item) => item.id === product.id);
-            if (existingItem) {
-                return prevCart.map((item) =>
-                    item.id === product.id
-                        ? { ...item, quantity: item.quantity + 1 }
-                        : item
-                );
+            // For Fashion, we ALWAYS create a new row to allow individual size selection
+            const isFashion = product.category === "Fashion";
+            
+            // Base key
+            const baseKey = `${product.id}-${selectedVariations.size || 'N/A'}-${selectedVariations.color || 'N/A'}`;
+            
+            // If it's fashion, we append a unique ID to keep it separate
+            const variantKey = isFashion 
+                ? `${baseKey}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+                : baseKey;
+
+            // Non-fashion items still merge as normal
+            if (!isFashion) {
+                const existingItem = prevCart.find((item) => item.variantKey === variantKey);
+                if (existingItem) {
+                    return prevCart.map((item) =>
+                        item.variantKey === variantKey
+                            ? { ...item, quantity: item.quantity + 1 }
+                            : item
+                    );
+                }
             }
-            return [...prevCart, { ...product, quantity: 1 }];
+
+            // Otherwise add as a new row (Quantity is always 1 for individual fashion rows)
+            return [...prevCart, { ...product, variantKey, selectedVariations, quantity: 1 }];
         });
+        
         setLastAddedProduct(product);
-        setIsCartModalOpen(true);
+        setLastAddedVariations(selectedVariations);
+
+        // Re-calculate the key for the modal state
+        const isFashion = product.category === "Fashion";
+        const baseKey = `${product.id}-${selectedVariations.size || 'N/A'}-${selectedVariations.color || 'N/A'}`;
+        
+        setLastAddedVariantKey(isFashion ? null : baseKey); // For fashion, we'll handle it differently in the modal
+        
+        // Don't show the "Go to Cart" modal if we are already in the cart page
+        if (window.location.pathname !== "/cart") {
+            setIsCartModalOpen(true);
+        }
     };
 
-    const removeFromCart = (productId) => {
-        setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
+    const removeFromCart = (variantKey) => {
+        setCart((prevCart) => prevCart.filter((item) => item.variantKey !== variantKey));
     };
 
-    const updateQuantity = (productId, quantity) => {
+    const updateQuantity = (variantKey, quantity) => {
         if (quantity < 1) return;
         setCart((prevCart) =>
             prevCart.map((item) =>
-                item.id === productId ? { ...item, quantity } : item
+                item.variantKey === variantKey ? { ...item, quantity } : item
             )
         );
+    };
+
+    const updateVariant = (oldVariantKey, newVariations) => {
+        setCart((prevCart) => {
+            const itemToUpdate = prevCart.find(i => i.variantKey === oldVariantKey);
+            if (!itemToUpdate) return prevCart;
+
+            const newVariantKey = `${itemToUpdate.id}-${newVariations.size || 'N/A'}-${newVariations.color || 'N/A'}`;
+            
+            // Check if this new variant already exists (excluding the current one)
+            const existingSameVariant = prevCart.find(i => i.variantKey === newVariantKey && i.variantKey !== oldVariantKey);
+            
+            if (existingSameVariant) {
+                // Merge quantities and remove the old one
+                return prevCart.filter(i => i.variantKey !== oldVariantKey).map(i => 
+                    i.variantKey === newVariantKey 
+                        ? { ...i, quantity: i.quantity + itemToUpdate.quantity } 
+                        : i
+                );
+            }
+
+            // Just update the current item
+            return prevCart.map(i => 
+                i.variantKey === oldVariantKey 
+                    ? { ...i, variantKey: newVariantKey, selectedVariations: newVariations } 
+                    : i
+            );
+        });
     };
 
     const clearCart = () => {
@@ -71,6 +129,7 @@ export const CartProvider = ({ children }) => {
                 addToCart,
                 removeFromCart,
                 updateQuantity,
+                updateVariant,
                 clearCart,
                 cartSubtotal,
                 productDiscountTotal,
@@ -79,6 +138,8 @@ export const CartProvider = ({ children }) => {
                 isCartModalOpen,
                 setIsCartModalOpen,
                 lastAddedProduct,
+                lastAddedVariantKey,
+                lastAddedVariations,
             }}
         >
             {children}
