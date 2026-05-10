@@ -29,6 +29,18 @@ export const SettingsProvider = ({ children }) => {
             wallet: true,
             coupon: true,
             flashSale: true
+        },
+        payments: {
+            codEnabled: true,
+            onlinePaymentEnabled: true,
+            codAdvanceEnabled: true,
+            insideDhakaCharge: 100,
+            outsideDhakaCharge: 150,
+            bkashNumber: "017XXXXXXXX",
+            nagadNumber: "017XXXXXXXX",
+            rocketNumber: "017XXXXXXXX",
+            bankInfo: "Bank details here",
+            paymentInstructions: "Please send the delivery charge as advance to confirm your order."
         }
     });
 
@@ -46,7 +58,8 @@ export const SettingsProvider = ({ children }) => {
                     branding: { ...prev.branding, ...data.branding },
                     theme: { ...prev.theme, ...data.theme },
                     seo: { ...prev.seo, ...data.seo },
-                    features: { ...prev.features, ...data.features }
+                    features: { ...prev.features, ...data.features },
+                    payments: { ...prev.payments, ...data.payments }
                 }));
             }
             setLoading(false);
@@ -105,6 +118,18 @@ export const SettingsProvider = ({ children }) => {
                 wallet: true,
                 coupon: true,
                 flashSale: true
+            },
+            payments: {
+                codEnabled: true,
+                onlinePaymentEnabled: true,
+                codAdvanceEnabled: true,
+                insideDhakaCharge: 100,
+                outsideDhakaCharge: 150,
+                bkashNumber: "017XXXXXXXX",
+                nagadNumber: "017XXXXXXXX",
+                rocketNumber: "017XXXXXXXX",
+                bankInfo: "Bank details here",
+                paymentInstructions: "Please send the delivery charge as advance to confirm your order."
             }
         };
         return updateSettings(defaults);

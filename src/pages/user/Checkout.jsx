@@ -5,15 +5,24 @@ import { createOrder, validateCoupon, createAuditLog } from "../../utils/dbServi
 import { calculateFraudScore } from "../../utils/FraudService";
 import { useNavigate } from "react-router-dom";
 import { BsBagCheck, BsShieldCheck, BsTruck, BsTag, BsX, BsCheck2Circle } from "react-icons/bs";
+import { useSettings } from "../../context/SettingsContext";
 import toast from "react-hot-toast";
 
 const Checkout = () => {
     const { cart, cartTotal, cartSubtotal, productDiscountTotal, clearCart } = useCart();
     const { currentUser } = useAuth();
+    const { settings } = useSettings();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [placedOrder, setPlacedOrder] = useState(null);
+
+    // Dynamic Payment States
+    const [location, setLocation] = useState("inside"); // inside | outside
+    const [advanceMethod, setAdvanceMethod] = useState("bkash"); // bkash | bank
+    const [advanceTxnId, setAdvanceTxnId] = useState("");
+    const [paymentMethod, setPaymentMethod] = useState("COD");
+    const [payFull, setPayFull] = useState(false);
 
     // Coupon State
     const [couponCode, setCouponCode] = useState("");
@@ -29,8 +38,6 @@ const Checkout = () => {
         city: "",
         zip: ""
     });
-
-    const [paymentMethod, setPaymentMethod] = useState("COD");
 
     useEffect(() => {
         if (appliedCoupon) {
@@ -77,9 +84,14 @@ const Checkout = () => {
         setLoading(true);
 
         try {
-            const shippingFee = 50;
-            const walletUsed = 0; // Placeholder for wallet system
+            const paySettings = settings?.payments || { insideDhakaCharge: 100, outsideDhakaCharge: 150 };
+            const shippingFee = location === 'inside' ? paySettings.insideDhakaCharge : paySettings.outsideDhakaCharge;
+            const walletUsed = 0; 
+            // Final total now INCLUDES shipping fee again to track full order value
             const finalTotal = cartTotal - discountAmount + shippingFee - walletUsed;
+            
+            // Calculate how much they are paying now
+            const amountToPay = payFull ? finalTotal : shippingFee;
 
             // Map cart to items schema
             const orderItems = {};
@@ -111,7 +123,13 @@ const Checkout = () => {
                 paymentMethod,
                 paymentStatus: paymentMethod === 'ONLINE' ? 'paid' : 'pending',
                 orderStatus: "pending",
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                // COD Advance specific fields
+                location,
+                advanceRequired: Number(amountToPay),
+                advanceMethod,
+                advanceTxnId,
+                isAdvanceVerified: false
             };
 
             // Fraud Detection using specialized service
@@ -218,33 +236,149 @@ const Checkout = () => {
                             </div>
 
                             <div className="pt-8 mt-8 border-t border-gray-100">
+                                <h2 className="text-xl font-black text-gray-900 mb-6">Delivery Location</h2>
+                                <div className="grid grid-cols-2 gap-4 mb-8">
+                                    <button
+                                        type="button"
+                                        onClick={() => setLocation("inside")}
+                                        className={`p-4 rounded-2xl border-2 transition-all font-bold text-sm ${location === "inside" ? "border-primary bg-green-50 text-primary" : "border-gray-50 bg-gray-50 text-gray-500"}`}
+                                    >
+                                        Inside Dhaka (৳{settings?.payments?.insideDhakaCharge || 100})
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setLocation("outside")}
+                                        className={`p-4 rounded-2xl border-2 transition-all font-bold text-sm ${location === "outside" ? "border-primary bg-green-50 text-primary" : "border-gray-50 bg-gray-50 text-gray-500"}`}
+                                    >
+                                        Outside Dhaka (৳{settings?.payments?.outsideDhakaCharge || 150})
+                                    </button>
+                                </div>
+
                                 <h2 className="text-xl font-black text-gray-900 mb-6">Payment Method</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <label className={`flex items-center gap-4 p-5 rounded-3xl cursor-pointer transition-all border-2 ${paymentMethod === 'COD' ? 'border-primary bg-green-50/50' : 'border-gray-50 bg-gray-50 hover:bg-gray-100'}`}>
-                                        <input
-                                            type="radio" name="payment" value="COD"
-                                            className="w-5 h-5 text-primary focus:ring-primary"
-                                            checked={paymentMethod === "COD"}
-                                            onChange={(e) => setPaymentMethod(e.target.value)}
-                                        />
-                                        <div>
-                                            <div className="font-black text-gray-900">Cash on Delivery</div>
-                                            <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Pay when you receive</div>
+                                    {settings?.payments?.codEnabled !== false && (
+                                        <label className={`flex items-center gap-4 p-5 rounded-3xl cursor-pointer transition-all border-2 ${paymentMethod === 'COD' ? 'border-primary bg-green-50/50' : 'border-gray-50 bg-gray-50 hover:bg-gray-100'}`}>
+                                            <input
+                                                type="radio" name="payment" value="COD"
+                                                className="w-5 h-5 text-primary focus:ring-primary"
+                                                checked={paymentMethod === "COD"}
+                                                onChange={(e) => setPaymentMethod(e.target.value)}
+                                            />
+                                            <div>
+                                                <div className="font-black text-gray-900">Cash on Delivery</div>
+                                                <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Pay when you receive</div>
+                                            </div>
+                                        </label>
+                                    )}
+                                    {settings?.payments?.onlinePaymentEnabled !== false ? (
+                                        <label className={`flex items-center gap-4 p-5 rounded-3xl cursor-pointer transition-all border-2 ${paymentMethod === 'ONLINE' ? 'border-primary bg-green-50/50' : 'border-gray-50 bg-gray-50 hover:bg-gray-100'}`}>
+                                            <input
+                                                type="radio" name="payment" value="ONLINE"
+                                                className="w-5 h-5 text-primary focus:ring-primary"
+                                                checked={paymentMethod === "ONLINE"}
+                                                onChange={(e) => setPaymentMethod(e.target.value)}
+                                            />
+                                            <div>
+                                                <div className="font-black text-gray-900">Online Payment</div>
+                                                <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">SSLCommerz Secured</div>
+                                            </div>
+                                        </label>
+                                    ) : (
+                                        <div className="p-5 rounded-3xl bg-gray-50 border-2 border-dashed border-gray-200 opacity-60 flex items-center justify-center text-center">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Online payment temporarily unavailable</p>
                                         </div>
-                                    </label>
-                                    <label className={`flex items-center gap-4 p-5 rounded-3xl cursor-pointer transition-all border-2 ${paymentMethod === 'ONLINE' ? 'border-primary bg-green-50/50' : 'border-gray-50 bg-gray-50 hover:bg-gray-100'}`}>
-                                        <input
-                                            type="radio" name="payment" value="ONLINE"
-                                            className="w-5 h-5 text-primary focus:ring-primary"
-                                            checked={paymentMethod === "ONLINE"}
-                                            onChange={(e) => setPaymentMethod(e.target.value)}
-                                        />
-                                        <div>
-                                            <div className="font-black text-gray-900">Online Payment</div>
-                                            <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">SSLCommerz Secured</div>
-                                        </div>
-                                    </label>
+                                    )}
                                 </div>
+
+                                {/* COD Advance Payment Fields */}
+                                {paymentMethod === 'COD' && settings?.payments?.codAdvanceEnabled && (
+                                    <div className="mt-8 p-6 bg-primary/5 border border-primary/10 rounded-[2rem] space-y-6 animate-fade-in">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <div className="p-2 bg-primary text-white rounded-lg">
+                                                <BsShieldCheck size={18} />
+                                            </div>
+                                            <h3 className="font-black text-gray-900">Advance Payment Required</h3>
+                                        </div>
+                                        
+                                        <div className="flex flex-col md:flex-row gap-4 items-center bg-white/50 p-4 rounded-2xl border border-primary/10 mb-4">
+                                            <div className="flex-1">
+                                                <h4 className="text-sm font-black text-gray-900 uppercase tracking-tight">Payment Option</h4>
+                                                <p className="text-[10px] text-gray-500 font-medium">Choose how much you want to pay now via Mobile Banking/Bank</p>
+                                            </div>
+                                            <div className="flex bg-gray-100 p-1 rounded-xl">
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => setPayFull(false)}
+                                                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${!payFull ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                                >
+                                                    Advance Only
+                                                </button>
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => setPayFull(true)}
+                                                    className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${payFull ? 'bg-primary text-white shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                                >
+                                                    Full Payment
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <p className="text-sm text-gray-600 leading-relaxed font-medium">
+                                            {payFull 
+                                                ? `Please send the full amount ৳${Number(cartTotal) - Number(discountAmount) + (location === 'inside' ? (settings?.payments?.insideDhakaCharge || 100) : (settings?.payments?.outsideDhakaCharge || 150))} to confirm your order.` 
+                                                : (settings?.payments?.paymentInstructions || "Please send the delivery charge as advance to confirm your order.")
+                                            }
+                                        </p>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            <div className="bg-white p-4 rounded-2xl border border-gray-100">
+                                                <span className="block text-[9px] font-black text-primary uppercase tracking-widest mb-1">bKash</span>
+                                                <span className="text-sm font-black text-gray-900 tracking-tighter">{settings?.payments?.bkashNumber || "017XXXXXXXX"}</span>
+                                            </div>
+                                            <div className="bg-white p-4 rounded-2xl border border-gray-100">
+                                                <span className="block text-[9px] font-black text-orange-500 uppercase tracking-widest mb-1">Nagad</span>
+                                                <span className="text-sm font-black text-gray-900 tracking-tighter">{settings?.payments?.nagadNumber || "017XXXXXXXX"}</span>
+                                            </div>
+                                            <div className="bg-white p-4 rounded-2xl border border-gray-100">
+                                                <span className="block text-[9px] font-black text-purple-500 uppercase tracking-widest mb-1">Rocket</span>
+                                                <span className="text-sm font-black text-gray-900 tracking-tighter">{settings?.payments?.rocketNumber || "017XXXXXXXX"}</span>
+                                            </div>
+                                            <div className="bg-white p-4 rounded-2xl border border-gray-100 md:col-span-2 lg:col-span-3">
+                                                <span className="block text-[9px] font-black text-primary uppercase tracking-widest mb-1">Bank Account</span>
+                                                <span className="text-[10px] font-bold text-gray-700 whitespace-pre-wrap">{settings?.payments?.bankInfo || "Bank details here"}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4 pt-4 border-t border-primary/10">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Payment Method</label>
+                                                    <select 
+                                                        className="w-full bg-white border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 font-bold text-sm"
+                                                        value={advanceMethod}
+                                                        onChange={(e) => setAdvanceMethod(e.target.value)}
+                                                    >
+                                                        <option value="bkash">bKash</option>
+                                                        <option value="nagad">Nagad</option>
+                                                        <option value="rocket">Rocket</option>
+                                                        <option value="bank">Bank Transfer</option>
+                                                        <option value="others">Others</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">TxnID / Last 4 Digits (Optional)</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Enter TxnID or Last 4 digits"
+                                                        className="w-full bg-white border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 font-bold text-sm"
+                                                        value={advanceTxnId}
+                                                        onChange={(e) => setAdvanceTxnId(e.target.value.toUpperCase())}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </form>
                     </div>
@@ -329,12 +463,20 @@ const Checkout = () => {
                                     </div>
                                 )}
                                 <div className="flex justify-between text-gray-400">
-                                    <span>Shipping</span>
-                                    <span>৳50</span>
+                                    <span>Shipping ({location === 'inside' ? 'Inside Dhaka' : 'Outside Dhaka'})</span>
+                                    <span className="text-secondary font-black">৳{location === 'inside' ? (settings?.payments?.insideDhakaCharge || 100) : (settings?.payments?.outsideDhakaCharge || 150)}</span>
                                 </div>
-                                <div className="flex justify-between text-2xl font-black pt-4 border-t border-white/20 mt-4 text-white">
-                                    <span>Total</span>
-                                    <span className="text-secondary tracking-tight">৳{Number(cartSubtotal) - Number(productDiscountTotal) - Number(discountAmount) + 50}</span>
+                                <div className="flex justify-between text-2xl font-black pt-5 border-t border-white/20 mt-4 text-white uppercase">
+                                    <span>Total Payable</span>
+                                    <span className="text-secondary tracking-tight">৳{Number(cartTotal) - Number(discountAmount) + (location === 'inside' ? (settings?.payments?.insideDhakaCharge || 100) : (settings?.payments?.outsideDhakaCharge || 150))}</span>
+                                </div>
+                                <div className="p-3 bg-white/5 rounded-xl border border-white/10 mt-2">
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center">
+                                        {payFull 
+                                            ? `Pay ৳${Number(cartTotal) - Number(discountAmount) + (location === 'inside' ? (settings?.payments?.insideDhakaCharge || 100) : (settings?.payments?.outsideDhakaCharge || 150))} now to confirm` 
+                                            : `Pay ৳${location === 'inside' ? (settings?.payments?.insideDhakaCharge || 100) : (settings?.payments?.outsideDhakaCharge || 150)} in advance to confirm`
+                                        }
+                                    </p>
                                 </div>
                             </div>
 

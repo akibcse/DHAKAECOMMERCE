@@ -48,18 +48,25 @@ const SalesHistory = () => {
             setCustomers(custMap);
 
             // Normalize Data
-            const normalizedOnline = onlineOrders.map(order => ({
-                id: order.orderId,
-                invoiceNo: order.orderNumber,
-                date: order.createdAt,
-                type: 'Online',
-                customerName: order.shippingDetails?.name || "Unknown",
-                total: order.finalAmount,
-                paid: order.paymentStatus === 'paid' ? order.finalAmount : 0, // Simplified assumption or check payment logs
-                due: order.paymentStatus === 'paid' ? 0 : order.finalAmount,
-                status: order.orderStatus,
-                originalData: order
-            }));
+            const normalizedOnline = onlineOrders.map(order => {
+                const advancePaid = (order.paymentMethod === 'COD' && order.isAdvanceVerified) ? Number(order.advanceRequired || 0) : 0;
+                const totalWithAdvance = Number(order.finalAmount || 0) + Number(order.advanceRequired || 0);
+                const isOrderPaid = order.paymentStatus === 'paid';
+                const mainAmountPaid = isOrderPaid ? Number(order.finalAmount || 0) : 0;
+                
+                return {
+                    id: order.orderId,
+                    invoiceNo: order.orderNumber,
+                    date: order.createdAt,
+                    type: 'Online',
+                    customerName: order.shippingDetails?.name || "Unknown",
+                    total: totalWithAdvance,
+                    paid: mainAmountPaid + advancePaid,
+                    due: totalWithAdvance - (mainAmountPaid + advancePaid),
+                    status: order.orderStatus,
+                    originalData: order
+                };
+            });
 
             const normalizedOffline = offlineSales.map(sale => {
                 const customer = custMap[sale.customerId];

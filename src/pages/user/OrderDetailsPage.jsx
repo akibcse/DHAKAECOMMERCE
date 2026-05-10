@@ -221,9 +221,21 @@ const OrderDetailsPage = () => {
                                 <span>৳{Number(order.deliveryCharge || 0)}</span>
                             </div>
                             <div className="flex justify-between text-2xl font-black pt-5 border-t border-white/20 mt-4 text-white uppercase tracking-tighter">
-                                <span>Total Paid</span>
-                                <span className="text-primary">৳{Number(order.finalAmount || 0)}</span>
+                                <span>Final Payable</span>
+                                <span className="text-secondary">৳{Number(order.finalAmount || 0) - (order.isAdvanceVerified ? Number(order.advanceRequired || 0) : 0)}</span>
                             </div>
+                            
+                            {order.paymentMethod === 'COD' && order.advanceRequired > 0 && (
+                                <div className="mt-4 pt-4 border-t border-white/5 space-y-3">
+                                    <div className="flex justify-between text-xs text-green-400">
+                                        <span>Advance Paid ({order.advanceMethod?.toUpperCase()})</span>
+                                        <span>৳{Number(order.advanceRequired)}</span>
+                                    </div>
+                                    <p className="text-[10px] text-gray-500 font-medium italic">
+                                        * Advance delivery charge is separate and not deducted from the total due.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -243,8 +255,30 @@ const OrderDetailsPage = () => {
                                 <span className="text-xs text-gray-500 font-bold">Method</span>
                                 <span className="text-xs font-black uppercase text-primary bg-primary/5 px-3 py-1 rounded-lg">{order.paymentMethod}</span>
                             </div>
+                            
+                            {order.paymentMethod === 'COD' && order.advanceRequired > 0 && (
+                                <div className="space-y-3 mb-3 pb-3 border-b border-gray-50">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs text-gray-500 font-bold">Advance Method</span>
+                                        <span className="text-[10px] font-black uppercase text-gray-900">{order.advanceMethod}</span>
+                                    </div>
+                                    {order.advanceTxnId && (
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs text-gray-500 font-bold">Ref (TxnID/Last 4)</span>
+                                            <span className="text-[10px] font-mono font-black text-gray-900 bg-gray-50 px-2 py-1 rounded">{order.advanceTxnId}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs text-gray-500 font-bold">Advance Status</span>
+                                        <span className={`text-[9px] font-black uppercase px-2 py-1 rounded-lg ${(order.isAdvanceVerified || order.paymentStatus === 'paid') ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600 animate-pulse'}`}>
+                                            {(order.isAdvanceVerified || order.paymentStatus === 'paid') ? 'Verified' : 'Pending Verification'}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-500 font-bold">Status</span>
+                                <span className="text-xs text-gray-500 font-bold">Payment Status</span>
                                 <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg ${order.paymentStatus === 'paid' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
                                     }`}>{order.paymentStatus}</span>
                             </div>

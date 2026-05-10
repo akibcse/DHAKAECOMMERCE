@@ -25,6 +25,14 @@ const Orders = () => {
         fetchOrders();
     }, []);
 
+    // [SYNC] Keep viewingOrder in sync with the master orders list
+    useEffect(() => {
+        if (viewingOrder) {
+            const fresh = orders.find(o => o.orderId === viewingOrder.orderId);
+            if (fresh) setViewingOrder(fresh);
+        }
+    }, [orders]);
+
     const fetchOrders = async () => {
         setLoading(true);
         setError(null);
@@ -58,7 +66,7 @@ const Orders = () => {
     const handleStatusChange = async (orderId, newStatus) => {
         try {
             await updateOrderStatus(orderId, newStatus);
-            fetchOrders();
+            await fetchOrders();
         } catch (error) {
             alert("Status update failed: " + error.message);
         }
@@ -67,9 +75,34 @@ const Orders = () => {
     const handlePaymentUpdate = async (orderId, newStatus) => {
         try {
             await updatePaymentStatus(orderId, newStatus);
-            fetchOrders();
+            
+            // Auto-verify advance if marked as fully paid
+            if (newStatus === 'paid') {
+                const { update, ref } = await import("firebase/database");
+                const { db } = await import("../../firebase/firebase");
+                const orderRef = ref(db, `orders/${orderId}`);
+                await update(orderRef, { isAdvanceVerified: true });
+            }
+            
+            await fetchOrders();
         } catch (error) {
             alert("Payment update failed: " + error.message);
+        }
+    };
+
+    const handleVerifyAdvance = async (orderId) => {
+        try {
+            const { update } = await import("firebase/database");
+            const { ref } = await import("../../firebase/firebase");
+            const { db } = await import("../../firebase/firebase");
+            // Direct firebase update to avoid complex dbServices refactoring
+            const orderRef = (await import("firebase/database")).ref((await import("../../firebase/firebase")).db, `orders/${orderId}`);
+            await (await import("firebase/database")).update(orderRef, { isAdvanceVerified: true });
+            toast.success("Advance payment verified!");
+            await fetchOrders();
+        } catch (error) {
+            console.error("Verification failed:", error);
+            alert("Failed to verify advance payment.");
         }
     };
 
@@ -181,6 +214,11 @@ const Orders = () => {
                                                     <BsCreditCard size={10} />
                                                     {order.paymentStatus}
                                                 </span>
+                                                {order.paymentMethod === 'COD' && order.advanceRequired > 0 && !order.isAdvanceVerified && order.paymentStatus !== 'paid' && (
+                                                    <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full animate-pulse">
+                                                        Verification Required
+                                                    </span>
+                                                )}
                                                 <button
                                                     onClick={() => handlePaymentUpdate(order.orderId, order.paymentStatus === 'paid' ? 'pending' : 'paid')}
                                                     className="text-[9px] text-gray-400 hover:text-primary underline text-left ml-1"
@@ -418,6 +456,34 @@ const Orders = () => {
                                                 {viewingOrder.paymentStatus}
                                             </span>
                                         </div>
+                                        
+                                        {viewingOrder.paymentMethod === 'COD' && viewingOrder.advanceRequired > 0 && (
+                                            <div className="mt-4 p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-2">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[9px] font-black text-gray-400 uppercase">Advance Method</span>
+                                                    <span className="text-[10px] font-black text-gray-900 uppercase">{viewingOrder.advanceMethod}</span>
+                                                </div>
+                                                {viewingOrder.advanceTxnId && (
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-[9px] font-black text-gray-400 uppercase">Ref (TxnID/Last 4)</span>
+                                                        <span className="text-[10px] font-mono font-black text-primary bg-primary/5 px-2 py-0.5 rounded">{viewingOrder.advanceTxnId}</span>
+                                                    </div>
+                                                )}
+                                                <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                                                    <span className="text-[9px] font-black text-gray-400 uppercase">Verification</span>
+                                                    {viewingOrder.isAdvanceVerified ? (
+                                                        <span className="text-[9px] font-black text-green-600 uppercase">Verified ✓</span>
+                                                    ) : (
+                                                        <button 
+                                                            onClick={() => handleVerifyAdvance(viewingOrder.orderId)}
+                                                            className="text-[9px] font-black bg-primary text-white px-2 py-1 rounded hover:bg-opacity-90 transition-all uppercase"
+                                                        >
+                                                            Verify Now
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -466,9 +532,20 @@ const Orders = () => {
                                                 <span className="font-bold">৳{viewingOrder.deliveryCharge}</span>
                                             </div>
                                             <div className="flex justify-between items-center pt-4 border-t border-white/20 mt-4">
-                                                <span className="text-lg font-black tracking-tight text-white uppercase">Final Paid</span>
-                                                <span className="text-3xl font-black text-primary tracking-tighter">৳{viewingOrder.finalAmount || viewingOrder.totalAmount || 0}</span>
+                                                <span className="text-lg font-black tracking-tight text-white uppercase">Final Payable</span>
+                                                <span className="text-3xl font-black text-white tracking-tighter">৳{Number(viewingOrder.finalAmount || viewingOrder.totalAmount || 0) - (viewingOrder.isAdvanceVerified ? Number(viewingOrder.advanceRequired || 0) : 0)}</span>
                                             </div>
+                                            {viewingOrder.paymentMethod === 'COD' && viewingOrder.advanceRequired > 0 && (
+                                                <div className="flex justify-between items-center pt-4 border-t border-white/5 mt-4 bg-primary/10 -mx-8 px-8 py-4">
+                                                    <div>
+                                                        <span className="block text-[10px] font-black text-secondary uppercase tracking-widest">Advance Paid</span>
+                                                        <span className={`text-xs font-medium italic ${viewingOrder.isAdvanceVerified ? 'text-green-400' : 'text-amber-400 animate-pulse'}`}>
+                                                            {viewingOrder.isAdvanceVerified ? 'Verified & Deducted' : 'Pending Verification'}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-2xl font-black text-secondary tracking-tighter">৳{Number(viewingOrder.advanceRequired)}</span>
+                                                </div>
+                                            )}
                                         </div>
 
                                         {(viewingOrder.discounts?.product + viewingOrder.discounts?.coupon + viewingOrder.discounts?.flashSale) > 0 && (

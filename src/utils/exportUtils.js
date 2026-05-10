@@ -102,49 +102,91 @@ export const generateInvoicePDF = (order, brandName = "DhakaEcommerce") => {
     // Summary
     const finalY = doc.lastAutoTable.finalY + 10;
     const summaryX = pageWidth - 70;
+    let currentY = finalY;
 
     doc.setFontSize(10);
-    doc.text("Subtotal:", summaryX, finalY);
-    doc.text(String(Number(order.subtotal)), pageWidth - 14, finalY, { align: "right" });
+    doc.setTextColor(100, 100, 100);
+    doc.text("Subtotal:", summaryX, currentY);
+    doc.text(String(Number(order.subtotal)), pageWidth - 14, currentY, { align: "right" });
+    currentY += 6;
 
-    let currentY = finalY + 6;
     if (Number(order.discounts?.product) > 0) {
         doc.text("Product Discount:", summaryX, currentY);
         doc.text(`-${Number(order.discounts.product)}`, pageWidth - 14, currentY, { align: "right" });
         currentY += 6;
     }
-    if (Number(order.discounts?.coupon) > 0) {
-        doc.text("Coupon Discount:", summaryX, currentY);
-        doc.text(`-${Number(order.discounts.coupon)}`, pageWidth - 14, currentY, { align: "right" });
-        currentY += 6;
-    }
-    if (Number(order.discounts?.flashSale) > 0) {
-        doc.text("Flash Sale Discount:", summaryX, currentY);
-        doc.text(`-${Number(order.discounts.flashSale)}`, pageWidth - 14, currentY, { align: "right" });
-        currentY += 6;
-    }
-    if (Number(order.walletUsed) > 0) {
-        doc.text("Wallet Deduction:", summaryX, currentY);
-        doc.text(`-${Number(order.walletUsed)}`, pageWidth - 14, currentY, { align: "right" });
-        currentY += 6;
-    }
-
+    
     doc.text("Delivery Charge:", summaryX, currentY);
-    doc.text(String(Number(order.deliveryCharge)), pageWidth - 14, currentY, { align: "right" });
-    currentY += 10;
+    doc.text(String(Number(order.deliveryCharge || 0)), pageWidth - 14, currentY, { align: "right" });
+    currentY += 8;
 
-    doc.setFontSize(14);
+    // Verified Deduction
+    if (order.isAdvanceVerified) {
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(34, 197, 94); // Green
+        doc.text("Advance Paid:", summaryX, currentY);
+        doc.text(`-${Number(order.advanceRequired || 0)}`, pageWidth - 14, currentY, { align: "right" });
+        currentY += 10;
+    }
+
+    // Parcel Type Stamp
+    let parcelType = "UNPAID";
+    let instruction = "Collect Full Amount (Prod + Del)";
+    doc.setTextColor(0, 0, 0);
+
+    if (order.isAdvanceVerified) {
+        if (Number(order.advanceRequired || 0) === Number(order.finalAmount || 0)) {
+            parcelType = "FULLY PAID";
+            instruction = "No Collection Required";
+            doc.setLineWidth(1.5);
+            doc.setDrawColor(0, 0, 0);
+            doc.rect(14, currentY, pageWidth - 28, 22); 
+        } else {
+            parcelType = "ADVANCE PAID";
+            instruction = "Collect Product Price Only";
+            doc.setLineWidth(1);
+            doc.rect(14, currentY, pageWidth - 28, 22);
+        }
+    } else {
+        doc.setDrawColor(180, 180, 180);
+        doc.setLineDash([2, 2], 0);
+        doc.rect(14, currentY, pageWidth - 28, 22);
+        doc.setLineDash([]);
+        doc.setTextColor(100, 100, 100);
+    }
+
+    doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(59, 130, 246);
-    doc.text("FINAL PAYABLE:", summaryX, currentY);
-    doc.text(String(Number(order.finalAmount)), pageWidth - 14, currentY, { align: "right" });
+    doc.text("PARCEL CLASSIFICATION", pageWidth / 2, currentY + 7, { align: "center", charSpace: 1 });
+    doc.setFontSize(16);
+    doc.text(parcelType, pageWidth / 2, currentY + 14, { align: "center", charSpace: 2 });
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.text(instruction.toUpperCase(), pageWidth / 2, currentY + 19, { align: "center", charSpace: 1 });
+    
+    currentY += 32;
+
+    // MASSIVE FINAL PAYABLE - Beautiful & Refined
+    const finalPayable = Number(order.finalAmount || 0) - (order.isAdvanceVerified ? Number(order.advanceRequired || 0) : 0);
+    
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(2);
+    doc.rect(14, currentY, pageWidth - 28, 45); 
+    doc.setTextColor(0, 0, 0);
+    
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text("TOTAL CASH TO COLLECT", pageWidth / 2, currentY + 10, { align: "center", charSpace: 2 });
+    
+    doc.setFontSize(50);
+    doc.text(`TK ${finalPayable}`, pageWidth / 2, currentY + 35, { align: "center" });
 
     // Footer
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.setFont("helvetica", "normal");
-    const footerText = `Thank you for shopping at ${brandName} | Generated on ${new Date().toLocaleString()}`;
-    doc.text(footerText, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: "center" });
+    doc.setFontSize(7);
+    doc.setTextColor(180, 180, 180);
+    doc.setFont("helvetica", "bold");
+    const footerText = `DHAKAECOMMERCE LOGISTICS MANIFEST | GENERATED AT ${new Date().toLocaleTimeString()}`;
+    doc.text(footerText, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: "center", charSpace: 1 });
 
     doc.save(fileName);
 };

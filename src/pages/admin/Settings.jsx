@@ -54,6 +54,7 @@ const Settings = () => {
         { id: "theme", label: "Theme & Colors" },
         { id: "seo", label: "SEO Settings" },
         { id: "social", label: "📣 Social Sharing" },
+        { id: "payments", label: "💰 Payment Settings" },
         { id: "features", label: "Feature Toggles" }
     ];
 
@@ -298,6 +299,116 @@ const Settings = () => {
                             >
                                 <span>🐦</span> Twitter Card Validator
                             </a>
+                        </div>
+                    </div>
+                )}
+
+                {/* Payment Settings Section */}
+                {activeTab === "payments" && (
+                    <div className="space-y-6 max-w-2xl">
+                        <h2 className="text-lg font-semibold mb-4">Payment & Delivery Settings</h2>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-gray-50 rounded-2xl">
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium">Enable COD</span>
+                                    <input
+                                        type="checkbox"
+                                        checked={localSettings.payments.codEnabled}
+                                        onChange={(e) => handleChange("payments", "codEnabled", e.target.checked)}
+                                        className="h-5 w-5 accent-primary"
+                                    />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium">Enable Online Payment</span>
+                                    <input
+                                        type="checkbox"
+                                        checked={localSettings.payments.onlinePaymentEnabled}
+                                        onChange={(e) => handleChange("payments", "onlinePaymentEnabled", e.target.checked)}
+                                        className="h-5 w-5 accent-primary"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium">Require COD Advance</span>
+                                    <input
+                                        type="checkbox"
+                                        checked={localSettings.payments.codAdvanceEnabled}
+                                        onChange={(e) => handleChange("payments", "codAdvanceEnabled", e.target.checked)}
+                                        className="h-5 w-5 accent-primary"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Inside Dhaka Charge (৳)</label>
+                                <input
+                                    type="number"
+                                    value={localSettings.payments.insideDhakaCharge}
+                                    onChange={(e) => handleChange("payments", "insideDhakaCharge", Number(e.target.value))}
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Outside Dhaka Charge (৳)</label>
+                                <input
+                                    type="number"
+                                    value={localSettings.payments.outsideDhakaCharge}
+                                    onChange={(e) => handleChange("payments", "outsideDhakaCharge", Number(e.target.value))}
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">bKash Number</label>
+                                <input
+                                    type="text"
+                                    value={localSettings.payments.bkashNumber}
+                                    onChange={(e) => handleChange("payments", "bkashNumber", e.target.value)}
+                                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Nagad Number</label>
+                                    <input
+                                        type="text"
+                                        value={localSettings.payments.nagadNumber}
+                                        onChange={(e) => handleChange("payments", "nagadNumber", e.target.value)}
+                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Rocket Number</label>
+                                    <input
+                                        type="text"
+                                        value={localSettings.payments.rocketNumber}
+                                        onChange={(e) => handleChange("payments", "rocketNumber", e.target.value)}
+                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Bank Information</label>
+                                <textarea
+                                    value={localSettings.payments.bankInfo}
+                                    onChange={(e) => handleChange("payments", "bankInfo", e.target.value)}
+                                    className="w-full px-4 py-2 border rounded-lg h-24 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Payment Instructions</label>
+                                <textarea
+                                    value={localSettings.payments.paymentInstructions}
+                                    onChange={(e) => handleChange("payments", "paymentInstructions", e.target.value)}
+                                    className="w-full px-4 py-2 border rounded-lg h-24 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-none"
+                                />
+                            </div>
                         </div>
                     </div>
                 )}

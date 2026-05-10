@@ -1,9 +1,12 @@
 import { Link } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
+import { useSettings } from "../../context/SettingsContext";
 import { BsTrash, BsPlus, BsDash } from "react-icons/bs";
 
 const Cart = () => {
     const { cart, removeFromCart, updateQuantity, cartTotal, cartSubtotal, productDiscountTotal } = useCart();
+    const { settings } = useSettings();
+    const shippingFee = settings?.payments?.insideDhakaCharge || 100;
 
     if (cart.length === 0) {
         return (
@@ -86,12 +89,12 @@ const Cart = () => {
                                 </div>
                             )}
                             <div className="flex justify-between text-gray-600">
-                                <span>Shipping</span>
-                                <span>৳50</span>
+                                <span>Shipping (Inside Dhaka)</span>
+                                <span>৳{shippingFee}</span>
                             </div>
                             <div className="border-t pt-4 flex justify-between font-bold text-lg">
                                 <span>Total</span>
-                                <span>৳{Number(cartSubtotal) - Number(productDiscountTotal) + 50}</span>
+                                <span>৳{Number(cartSubtotal) - Number(productDiscountTotal) + shippingFee}</span>
                             </div>
                         </div>
                         <Link
