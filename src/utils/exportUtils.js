@@ -169,9 +169,9 @@ export const generateInvoicePDF = (order, brandName = "DhakaEcommerce") => {
     // MASSIVE FINAL PAYABLE - Beautiful & Refined
     const finalPayable = Number(order.finalAmount || 0) - (order.isAdvanceVerified ? Number(order.advanceRequired || 0) : 0);
     
-    doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(2);
-    doc.rect(14, currentY, pageWidth - 28, 45); 
+    // doc.setDrawColor(0, 0, 0);
+    // doc.setLineWidth(2);
+    // doc.rect(14, currentY, pageWidth - 28, 45); 
     doc.setTextColor(0, 0, 0);
     
     doc.setFontSize(9);

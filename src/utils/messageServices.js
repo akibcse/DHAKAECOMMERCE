@@ -1,5 +1,6 @@
 import { ref, push, set, get, onValue, query, orderByChild, equalTo, off } from "firebase/database";
 import { db } from "../firebase/firebase";
+import { createNotification } from "./notificationServices";
 
 /**
  * Send a message for a specific order
@@ -18,6 +19,30 @@ export const sendMessage = async (orderId, senderRole, senderEmail, text) => {
             timestamp: new Date().toISOString(),
             read: false
         });
+
+        // Notify recipient
+        // If sender is user, notify admin. If sender is admin, notify user.
+        if (senderRole === 'user') {
+            await createNotification('admin', {
+                title: 'New Message from Customer',
+                message: `New message for Order #${orderId.slice(-8)}`,
+                type: 'NEW_MESSAGE',
+                link: `/admin/orders` // Adjust if there's a specific chat link for admin
+            });
+        } else {
+            // Need to get order to find userId
+            const orderSnapshot = await get(ref(db, `orders/${orderId}`));
+            if (orderSnapshot.exists()) {
+                const order = orderSnapshot.val();
+                await createNotification(order.userId, {
+                    title: 'New Message from Shop',
+                    message: `You have a new message for Order #${order.orderNumber}`,
+                    type: 'NEW_MESSAGE',
+                    link: `/order-messages/${orderId}`
+                });
+            }
+        }
+
         return messageRef.key;
     } catch (error) {
         console.error("Error sending message:", error);

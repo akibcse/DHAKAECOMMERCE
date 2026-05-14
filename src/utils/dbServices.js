@@ -1,5 +1,6 @@
 import { ref, push, set, get, update, remove, child, runTransaction, query, orderByChild, equalTo } from "firebase/database";
 import { db, auth } from "../firebase/firebase";
+import { createNotification } from "./notificationServices";
 
 // --- Helpers ---
 export const generateOrderNumber = async () => {
@@ -115,6 +116,15 @@ export const createOrder = async (orderData) => {
 
         await set(ref(db, 'orders/' + newOrderKey), finalOrder);
         await createAuditLog('ORDER_CREATE', { orderId: newOrderKey, orderNumber }, 'order', newOrderKey);
+
+        // Notify Admin
+        await createNotification('admin', {
+            title: 'New Order Placed',
+            message: `Order #${orderNumber} has been placed by ${orderData.shippingDetails?.name || 'Customer'}.`,
+            type: 'NEW_ORDER',
+            link: `/admin/orders`
+        });
+
         return { orderId: newOrderKey, orderNumber };
     } catch (error) {
         console.error("Error creating order:", error);
@@ -179,6 +189,18 @@ export const getOrderById = async (orderId) => {
 export const updateOrderStatus = async (orderId, status) => {
     try {
         await update(ref(db, 'orders/' + orderId), { orderStatus: status });
+        
+        // Fetch order to get userId for notification
+        const snapshot = await get(ref(db, 'orders/' + orderId));
+        if (snapshot.exists()) {
+            const order = snapshot.val();
+            await createNotification(order.userId, {
+                title: 'Order Status Updated',
+                message: `Your order #${order.orderNumber} is now ${status.toUpperCase()}.`,
+                type: 'ORDER_UPDATE',
+                link: `/orders/${orderId}`
+            });
+        }
     } catch (error) {
         console.error("Error updating order status:", error);
         throw error;

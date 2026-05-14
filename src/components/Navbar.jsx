@@ -5,6 +5,7 @@ import { useSettings } from "../context/SettingsContext"; // [NEW]
 import { BsCart, BsPerson, BsList, BsX } from "react-icons/bs";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import NotificationCenter from "./NotificationCenter";
 
 const Navbar = () => {
     const { currentUser, logout, userRole } = useAuth();
@@ -60,6 +61,8 @@ const Navbar = () => {
                         )}
                     </Link>
 
+                    {currentUser && <NotificationCenter />}
+
                     {currentUser ? (
                         <div className="relative group">
                             <button className="flex items-center hover:text-primary transition">
@@ -79,10 +82,13 @@ const Navbar = () => {
                     )}
                 </div>
 
-                {/* Mobile Menu Button */}
-                <button onClick={() => setIsOpen(!isOpen)} className="md:hidden">
-                    {isOpen ? <BsX size={30} /> : <BsList size={30} />}
-                </button>
+                {/* Mobile Menu Button & Notifications */}
+                <div className="flex items-center space-x-4 md:hidden">
+                    {currentUser && <NotificationCenter />}
+                    <button onClick={() => setIsOpen(!isOpen)} className="text-gray-600">
+                        {isOpen ? <BsX size={30} /> : <BsList size={30} />}
+                    </button>
+                </div>
             </div>
 
             {/* Mobile Menu */}
