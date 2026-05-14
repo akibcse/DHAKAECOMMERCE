@@ -3,37 +3,82 @@ import { Link } from 'react-router-dom';
 import { BsBell, BsCheck2All, BsInbox, BsChatText, BsTruck, BsBagCheck } from 'react-icons/bs';
 import { useAuth } from '../context/AuthContext';
 import { subscribeToNotifications, markAsRead, markAllRead } from '../utils/notificationServices';
+import toast from 'react-hot-toast';
+
+const NOTIFICATION_SOUND = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
 
 const NotificationCenter = () => {
     const { currentUser } = useAuth();
     const [notifications, setNotifications] = useState([]);
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
+    const lastNotifRef = useRef(null);
+    const isInitialLoad = useRef(true);
 
     const unreadCount = notifications.filter(n => !n.read).length;
+
+    const playNotificationSound = () => {
+        const audio = new Audio(NOTIFICATION_SOUND);
+        audio.play().catch(e => console.log("Audio play blocked by browser"));
+    };
+
+    const handleNewNotification = (notif) => {
+        if (isInitialLoad.current) return;
+        
+        // Check if this is actually a new notification (not just a state change of an old one)
+        if (lastNotifRef.current !== notif.id) {
+            lastNotifRef.current = notif.id;
+            
+            // Toast Popup
+            toast((t) => (
+                <div onClick={() => { toast.dismiss(t.id); setShowDropdown(true); }} className="cursor-pointer">
+                    <p className="font-black text-xs text-gray-900">{notif.title}</p>
+                    <p className="text-[10px] text-gray-500 mt-1">{notif.message}</p>
+                </div>
+            ), {
+                icon: '🔔',
+                duration: 4000,
+                position: 'top-right',
+            });
+
+            playNotificationSound();
+        }
+    };
 
     useEffect(() => {
         if (!currentUser) return;
 
+        let userUnread = [];
+        let adminUnread = [];
+
+        const updateAll = (userData, adminData) => {
+            const combined = [...userData, ...adminData].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            // Check for new notifications
+            if (combined.length > 0) {
+                const latest = combined[0];
+                if (!isInitialLoad.current && !latest.read && lastNotifRef.current !== latest.id) {
+                    handleNewNotification(latest);
+                }
+                lastNotifRef.current = latest.id;
+                isInitialLoad.current = false;
+            }
+            
+            setNotifications(combined);
+        };
+
         // Subscribe to user specific notifications
         const unsubscribeUser = subscribeToNotifications(currentUser.uid, (data) => {
-            setNotifications(prev => {
-                // Combine with existing admin notifications if any
-                const userNotifs = data;
-                const adminNotifs = prev.filter(n => n.recipient === 'admin');
-                return [...userNotifs, ...adminNotifs].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            });
+            userUnread = data;
+            updateAll(userUnread, adminUnread);
         });
 
         // If admin, also subscribe to admin notifications
         let unsubscribeAdmin = () => {};
         if (currentUser.role === 'admin') {
             unsubscribeAdmin = subscribeToNotifications('admin', (data) => {
-                const adminData = data.map(n => ({ ...n, recipient: 'admin' }));
-                setNotifications(prev => {
-                    const userNotifs = prev.filter(n => n.recipient !== 'admin');
-                    return [...userNotifs, ...adminData].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                });
+                adminUnread = data.map(n => ({ ...n, recipient: 'admin' }));
+                updateAll(userUnread, adminUnread);
             });
         }
 

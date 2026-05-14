@@ -4,6 +4,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { SettingsProvider } from "./context/SettingsContext"; // [NEW]
 import GlobalSEO from "./components/common/GlobalSEO"; // [NEW]
+import { Toaster } from "react-hot-toast";
 import MainLayout from "./layouts/MainLayout";
 import AdminLayout from "./layouts/AdminLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -54,6 +55,7 @@ function App() {
         <SettingsProvider>
           <CartProvider>
             <GlobalSEO />
+            <Toaster position="top-right" reverseOrder={false} />
             <AddToCartModal />
             <Routes>
               {/* Public Routes with Main Layout */}
