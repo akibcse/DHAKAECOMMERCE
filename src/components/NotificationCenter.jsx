@@ -20,9 +20,42 @@ const NotificationCenter = ({ darkMode = false }) => {
 
     const unreadCount = notifications.filter(n => !n.read).length;
 
+    const audioRef = useRef(new Audio(NOTIFICATION_SOUND));
+    const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
+
+    useEffect(() => {
+        const unlockAudio = () => {
+            if (isAudioUnlocked) return;
+            
+            // Play and immediately pause to unlock the audio context
+            audioRef.current.play()
+                .then(() => {
+                    audioRef.current.pause();
+                    audioRef.current.currentTime = 0;
+                    setIsAudioUnlocked(true);
+                    console.log("Audio context unlocked for mobile");
+                })
+                .catch(err => console.log("Audio unlock failed, waiting for next interaction", err));
+        };
+
+        window.addEventListener('click', unlockAudio, { once: true });
+        window.addEventListener('touchstart', unlockAudio, { once: true });
+
+        return () => {
+            window.removeEventListener('click', unlockAudio);
+            window.removeEventListener('touchstart', unlockAudio);
+        };
+    }, [isAudioUnlocked]);
+
     const playNotificationSound = () => {
-        const audio = new Audio(NOTIFICATION_SOUND);
-        audio.play().catch(e => console.log("Audio play blocked by browser"));
+        if (audioRef.current) {
+            audioRef.current.currentTime = 0;
+            audioRef.current.play().catch(e => {
+                console.log("Audio play blocked by browser. User must interact with the page first.");
+                // If it failed and we thought it was unlocked, reset the state
+                setIsAudioUnlocked(false);
+            });
+        }
     };
 
     const handleNewNotification = (notif) => {
