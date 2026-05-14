@@ -1,6 +1,7 @@
 import { messaging, db } from "../firebase/firebase";
 import { getToken, onMessage } from "firebase/messaging";
 import { ref, set, remove } from "firebase/database";
+import toast from "react-hot-toast";
 
 const VAPID_KEY = "BIUXI49-47o63hZn2rA_vI-x6Jm6_v3K_v_p6_j-8_v-8_v_v_v-v_v"; // I should ideally ask user or check if they have one, but I'll use a placeholder or suggest they generate one.
 
@@ -28,7 +29,28 @@ export const onMessageListener = () =>
     new Promise((resolve) => {
         onMessage(messaging, (payload) => {
             console.log("payload", payload);
-            alert(`New Notification: ${payload.notification.title}`);
+            
+            // Show premium toast for foreground FCM messages
+            toast((t) => (
+                <div onClick={() => { toast.dismiss(t.id); }} className="cursor-pointer">
+                    <p className="font-black text-xs text-gray-900 uppercase tracking-tighter">{payload.notification.title}</p>
+                    <p className="text-[10px] text-gray-500 mt-1 font-medium leading-tight">{payload.notification.body}</p>
+                </div>
+            ), {
+                icon: '🔔',
+                duration: 6000,
+                position: window.innerWidth < 768 ? 'top-center' : 'top-right',
+                style: {
+                    borderRadius: '1.5rem',
+                    background: '#ffffff',
+                    color: '#000000',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                    border: '1px solid #f3f4f6',
+                    padding: '16px',
+                    width: window.innerWidth < 768 ? '90%' : 'auto'
+                }
+            });
+
             resolve(payload);
         });
     });

@@ -122,7 +122,17 @@ export const createOrder = async (orderData) => {
             title: 'New Order Placed',
             message: `Order #${orderNumber} has been placed by ${orderData.shippingDetails?.name || 'Customer'}.`,
             type: 'NEW_ORDER',
-            link: `/admin/orders`
+            link: `/admin/orders`,
+            senderId: auth.currentUser?.uid
+        });
+
+        // Notify User
+        await createNotification(orderData.userId, {
+            title: 'Order Confirmed',
+            message: `Your order #${orderNumber} has been placed successfully!`,
+            type: 'ORDER_UPDATE',
+            link: `/orders/${newOrderKey}`,
+            senderId: auth.currentUser?.uid
         });
 
         return { orderId: newOrderKey, orderNumber };
@@ -198,7 +208,8 @@ export const updateOrderStatus = async (orderId, status) => {
                 title: 'Order Status Updated',
                 message: `Your order #${order.orderNumber} is now ${status.toUpperCase()}.`,
                 type: 'ORDER_UPDATE',
-                link: `/orders/${orderId}`
+                link: `/orders/${orderId}`,
+                senderId: auth.currentUser?.uid
             });
         }
     } catch (error) {
@@ -223,6 +234,19 @@ export const updatePaymentStatus = async (orderId, status) => {
     try {
         await update(ref(db, 'orders/' + orderId), { paymentStatus: status });
         await createAuditLog('ORDER_PAYMENT_UPDATE', { orderId, status });
+
+        // Notify User
+        const snapshot = await get(ref(db, 'orders/' + orderId));
+        if (snapshot.exists()) {
+            const order = snapshot.val();
+            await createNotification(order.userId, {
+                title: 'Payment Status Updated',
+                message: `Your payment for order #${order.orderNumber} is now ${status.toUpperCase()}.`,
+                type: 'ORDER_UPDATE',
+                link: `/orders/${orderId}`,
+                senderId: auth.currentUser?.uid
+            });
+        }
     } catch (error) {
         console.error("Error updating payment status:", error);
         throw error;

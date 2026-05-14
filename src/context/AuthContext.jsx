@@ -8,6 +8,7 @@ import {
 import { ref, get, set } from "firebase/database";
 import { auth, db } from "../firebase/firebase";
 import { createAuditLog } from "../utils/dbServices";
+import { createNotification } from "../utils/notificationServices";
 import { requestNotificationPermission, removeTokenFromDatabase, onMessageListener } from "../utils/NotificationService";
 
 const AuthContext = createContext();
@@ -34,6 +35,25 @@ export const AuthProvider = ({ children }) => {
         });
 
         await createAuditLog('USER_SIGNUP', { email, name }, 'user', user.uid);
+
+        // Notify Admin
+        await createNotification('admin', {
+            title: 'New User Registered',
+            message: `${name} (${email}) has just joined the platform.`,
+            type: 'SYSTEM',
+            link: '/admin/users',
+            senderId: user.uid
+        });
+
+        // Notify User (Welcome)
+        await createNotification(user.uid, {
+            title: 'Welcome to DhakaEcommerce',
+            message: `Hi ${name}, welcome to our platform! Start exploring our shop now.`,
+            type: 'SYSTEM',
+            link: '/shop',
+            senderId: user.uid
+        });
+
         return user;
     };
 

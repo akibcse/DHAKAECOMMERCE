@@ -4,7 +4,7 @@ import { db } from "../firebase/firebase";
 /**
  * Create a notification for a specific user or admin
  */
-export const createNotification = async (userId, { title, message, type, link }) => {
+export const createNotification = async (userId, { title, message, type, link, senderId }) => {
     try {
         const notifRef = push(ref(db, `notifications/${userId}`));
         await set(notifRef, {
@@ -13,7 +13,8 @@ export const createNotification = async (userId, { title, message, type, link })
             type,
             link,
             read: false,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            senderId: senderId || null
         });
         return notifRef.key;
     } catch (error) {

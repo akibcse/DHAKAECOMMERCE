@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { BsGrid, BsBoxSeam, BsCartCheck, BsPeople, BsHouse, BsList, BsX, BsImages, BsTag, BsGraphUp, BsFileEarmarkBarGraph, BsFileEarmarkSpreadsheet, BsGear, BsListUl } from "react-icons/bs";
 import clsx from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
+import NotificationCenter from "../components/NotificationCenter";
 
 const AdminLayout = () => {
     const location = useLocation();
@@ -80,12 +81,15 @@ const AdminLayout = () => {
                 <Link to="/admin" className="text-xl font-black tracking-tight">
                     Admin<span className="text-secondary">Panel</span>
                 </Link>
-                <button
-                    onClick={() => setIsSidebarOpen(true)}
-                    className="p-2 bg-gray-800 rounded-xl text-white"
-                >
-                    <BsList size={24} />
-                </button>
+                <div className="flex items-center gap-2">
+                    <NotificationCenter darkMode={true} />
+                    <button
+                        onClick={() => setIsSidebarOpen(true)}
+                        className="p-2 bg-gray-800 rounded-xl text-white"
+                    >
+                        <BsList size={24} />
+                    </button>
+                </div>
             </div>
 
             {/* Mobile Sidebar Overlay */}
@@ -124,7 +128,8 @@ const AdminLayout = () => {
                     "mt-16 lg:mt-0" // Add margin for fixed mobile header
                 )}>
                     {/* Add a subtle top bar for Desktop */}
-                    <div className="hidden lg:flex justify-end mb-8 items-center gap-4">
+                    <div className="hidden lg:flex justify-end mb-8 items-center gap-6">
+                        <NotificationCenter />
                         <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl border border-gray-100 shadow-sm">
                             <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold">A</div>
                             <span className="text-sm font-bold text-gray-700">Administrator</span>

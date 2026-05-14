@@ -10,8 +10,8 @@ const NOTIFICATION_SOUND = "https://assets.mixkit.co/active_storage/sfx/2869/286
 // Strict tracking to prevent duplicate toasts across listeners/re-renders
 const notifiedIds = new Set();
 
-const NotificationCenter = () => {
-    const { currentUser } = useAuth();
+const NotificationCenter = ({ darkMode = false }) => {
+    const { currentUser, userRole } = useAuth();
     const [notifications, setNotifications] = useState([]);
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
@@ -31,6 +31,9 @@ const NotificationCenter = () => {
         // Final guard against duplicates
         if (!notifiedIds.has(notif.id)) {
             notifiedIds.add(notif.id);
+
+            // Skip own notifications (sender is current user)
+            if (notif.senderId === currentUser.uid) return;
             
             // Toast Popup
             toast((t) => (
@@ -40,15 +43,17 @@ const NotificationCenter = () => {
                 </div>
             ), {
                 icon: '🔔',
-                duration: 5000,
-                position: 'top-right',
+                duration: 6000,
+                position: window.innerWidth < 768 ? 'top-center' : 'top-right',
                 style: {
                     borderRadius: '1.5rem',
                     background: '#ffffff',
                     color: '#000000',
                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
                     border: '1px solid #f3f4f6',
-                    padding: '16px'
+                    padding: '16px',
+                    width: window.innerWidth < 768 ? '90%' : 'auto',
+                    marginTop: window.innerWidth < 768 ? '10px' : '0'
                 }
             });
 
@@ -67,14 +72,17 @@ const NotificationCenter = () => {
             
             // Check for new notifications
             if (combined.length > 0) {
-                const latest = combined[0];
-                
-                // On initial load, mark the existing latest as already notified
                 if (isInitialLoad.current) {
-                    notifiedIds.add(latest.id);
+                    // On initial load, mark all existing unread as already notified to avoid mass notification
+                    combined.forEach(notif => {
+                        if (!notif.read) notifiedIds.add(notif.id);
+                    });
                     isInitialLoad.current = false;
-                } else if (!latest.read && !notifiedIds.has(latest.id)) {
-                    handleNewNotification(latest);
+                } else {
+                    // Find all unread notifications not yet processed
+                    const newNotifications = combined.filter(n => !n.read && !notifiedIds.has(n.id));
+                    // Process from oldest to newest among the new ones
+                    newNotifications.reverse().forEach(handleNewNotification);
                 }
             }
             
@@ -89,7 +97,7 @@ const NotificationCenter = () => {
 
         // If admin, also subscribe to admin notifications
         let unsubscribeAdmin = () => {};
-        if (currentUser.role === 'admin') {
+        if (userRole === 'admin') {
             unsubscribeAdmin = subscribeToNotifications('admin', (data) => {
                 adminUnread = data.map(n => ({ ...n, recipient: 'admin' }));
                 updateAll(userUnread, adminUnread);
@@ -100,7 +108,7 @@ const NotificationCenter = () => {
             unsubscribeUser();
             unsubscribeAdmin();
         };
-    }, [currentUser]);
+    }, [currentUser, userRole]);
 
     // Close dropdown on click outside
     useEffect(() => {
@@ -119,7 +127,7 @@ const NotificationCenter = () => {
 
     const handleMarkAllRead = () => {
         markAllRead(currentUser.uid);
-        if (currentUser.role === 'admin') markAllRead('admin');
+        if (userRole === 'admin') markAllRead('admin');
     };
 
     const getIcon = (type) => {
@@ -137,7 +145,7 @@ const NotificationCenter = () => {
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setShowDropdown(!showDropdown)}
-                className="relative p-2 text-gray-600 hover:text-primary transition-colors focus:outline-none"
+                className={`relative p-2 transition-colors focus:outline-none ${darkMode ? 'text-white hover:text-secondary' : 'text-gray-600 hover:text-primary'}`}
             >
                 <BsBell size={22} />
                 {unreadCount > 0 && (
