@@ -248,7 +248,7 @@ const ProductDetails = () => {
                             )}
                         </div>
 
-                        <div className="mb-10 opacity-60">
+                        <div className="mb-10">
                             <ShareButtons product={product} />
                         </div>
 

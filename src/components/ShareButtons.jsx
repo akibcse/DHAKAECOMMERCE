@@ -99,12 +99,13 @@ const ShareButtons = ({ product, compact = false }) => {
     return (
         <div className="mt-6">
             {/* Section header */}
-            <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-900 mb-4 flex items-center gap-2">
+                <span className="w-4 h-[2px] bg-primary rounded-full"></span>
                 Share this product
             </p>
 
             <div className={`flex flex-wrap ${compact ? "gap-2" : "gap-3"}`}>
-                {platforms.map((p) => (
+                {platforms.map((p, index) => (
                     <button
                         key={p.id}
                         id={`share-${p.id}`}
@@ -112,12 +113,14 @@ const ShareButtons = ({ product, compact = false }) => {
                         aria-label={`Share on ${p.label}`}
                         title={p.label}
                         className={`
-                            flex items-center gap-2 text-white text-sm font-semibold
-                            px-3 py-2 rounded-xl transition-all duration-200
-                            active:scale-95 shadow-sm
+                            flex items-center gap-2 text-white text-[11px] font-black uppercase tracking-widest
+                            px-4 py-3 rounded-2xl transition-all duration-300
+                            active:scale-95 shadow-lg shadow-gray-200/50 hover:shadow-xl hover:-translate-y-0.5
                             ${p.color}
-                            ${compact ? "px-3" : ""}
+                            ${compact ? "px-4" : ""}
+                            animate-fade-in
                         `}
+                        style={{ animationDelay: `${index * 100}ms`, animationFillMode: 'both' }}
                     >
                         {p.icon}
                         {!compact && (
@@ -133,13 +136,14 @@ const ShareButtons = ({ product, compact = false }) => {
                     aria-label="Copy product link"
                     title="Copy Link"
                     className={`
-                        flex items-center gap-2 text-gray-700 text-sm font-semibold
-                        px-3 py-2 rounded-xl transition-all duration-200
-                        active:scale-95 border border-gray-200
+                        flex items-center gap-2 text-gray-700 text-[11px] font-black uppercase tracking-widest
+                        px-4 py-3 rounded-2xl transition-all duration-300
+                        active:scale-95 border-2 hover:shadow-xl hover:-translate-y-0.5 animate-fade-in
                         ${copied
-                            ? "bg-green-50 border-green-300 text-green-700"
-                            : "bg-gray-100 hover:bg-gray-200"}
+                            ? "bg-green-50 border-green-200 text-green-700 shadow-green-100"
+                            : "bg-gray-50 border-gray-100 hover:bg-white hover:border-gray-200 shadow-gray-200/50"}
                     `}
+                    style={{ animationDelay: `${platforms.length * 100}ms`, animationFillMode: 'both' }}
                 >
                     {copied ? <BsCheck2 size={18} /> : <BsLink45Deg size={18} />}
                     {!compact && (
