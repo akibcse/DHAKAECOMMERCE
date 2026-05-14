@@ -7,6 +7,9 @@ import toast from 'react-hot-toast';
 
 const NOTIFICATION_SOUND = "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3";
 
+// Strict tracking to prevent duplicate toasts across listeners/re-renders
+const notifiedIds = new Set();
+
 const NotificationCenter = () => {
     const { currentUser } = useAuth();
     const [notifications, setNotifications] = useState([]);
@@ -25,20 +28,28 @@ const NotificationCenter = () => {
     const handleNewNotification = (notif) => {
         if (isInitialLoad.current) return;
         
-        // Check if this is actually a new notification (not just a state change of an old one)
-        if (lastNotifRef.current !== notif.id) {
-            lastNotifRef.current = notif.id;
+        // Final guard against duplicates
+        if (!notifiedIds.has(notif.id)) {
+            notifiedIds.add(notif.id);
             
             // Toast Popup
             toast((t) => (
                 <div onClick={() => { toast.dismiss(t.id); setShowDropdown(true); }} className="cursor-pointer">
-                    <p className="font-black text-xs text-gray-900">{notif.title}</p>
-                    <p className="text-[10px] text-gray-500 mt-1">{notif.message}</p>
+                    <p className="font-black text-xs text-gray-900 uppercase tracking-tighter">{notif.title}</p>
+                    <p className="text-[10px] text-gray-500 mt-1 font-medium leading-tight">{notif.message}</p>
                 </div>
             ), {
                 icon: '🔔',
-                duration: 4000,
+                duration: 5000,
                 position: 'top-right',
+                style: {
+                    borderRadius: '1.5rem',
+                    background: '#ffffff',
+                    color: '#000000',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                    border: '1px solid #f3f4f6',
+                    padding: '16px'
+                }
             });
 
             playNotificationSound();
@@ -57,11 +68,14 @@ const NotificationCenter = () => {
             // Check for new notifications
             if (combined.length > 0) {
                 const latest = combined[0];
-                if (!isInitialLoad.current && !latest.read && lastNotifRef.current !== latest.id) {
+                
+                // On initial load, mark the existing latest as already notified
+                if (isInitialLoad.current) {
+                    notifiedIds.add(latest.id);
+                    isInitialLoad.current = false;
+                } else if (!latest.read && !notifiedIds.has(latest.id)) {
                     handleNewNotification(latest);
                 }
-                lastNotifRef.current = latest.id;
-                isInitialLoad.current = false;
             }
             
             setNotifications(combined);
