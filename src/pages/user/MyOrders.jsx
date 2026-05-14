@@ -56,12 +56,12 @@ const MyOrders = () => {
                     {steps.map((s, idx) => (
                         <div key={idx} className="flex items-center flex-1">
                             <div className="flex flex-col items-center">
-                                <div className={`flex items-center justify-center w-7 h-7 rounded-full border-2 ${currentStep >= s.step ? "bg-primary border-primary text-white" : "bg-white border-gray-200 text-gray-300"}`}>
-                                    {s.icon}
+                                <div className={`flex items-center justify-center w-6 h-6 md:w-7 md:h-7 rounded-full border-2 ${currentStep >= s.step ? "bg-primary border-primary text-white" : "bg-white border-gray-200 text-gray-300"}`}>
+                                    <span className="scale-75 md:scale-100">{s.icon}</span>
                                 </div>
-                                <span className={`text-[9px] font-bold uppercase mt-1 ${currentStep >= s.step ? "text-primary" : "text-gray-300"}`}>{s.label}</span>
+                                <span className={`text-[7px] md:text-[9px] font-bold uppercase mt-1 text-center ${currentStep >= s.step ? "text-primary" : "text-gray-300"}`}>{s.label}</span>
                             </div>
-                            {idx < steps.length - 1 && <div className={`flex-1 h-0.5 mt-[-14px] ${currentStep > s.step ? "bg-primary" : "bg-gray-200"}`} />}
+                            {idx < steps.length - 1 && <div className={`flex-1 h-0.5 mt-[-18px] md:mt-[-14px] ${currentStep > s.step ? "bg-primary" : "bg-gray-200"}`} />}
                         </div>
                     ))}
                 </div>
@@ -121,15 +121,15 @@ const MyOrders = () => {
                     orders.map(order => (
                         <div key={order.orderId} className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 border-l-8 border-primary relative group">
                             <div className="flex justify-between items-start mb-6">
-                                <div>
-                                    <h3 className="text-xl font-black text-gray-900 mb-1">Order #{order.orderNumber}</h3>
-                                    <p className="text-sm font-medium text-gray-400">{new Date(order.createdAt).toLocaleDateString()}</p>
+                                <div className="max-w-[60%]">
+                                    <h3 className="text-lg md:text-xl font-black text-gray-900 mb-1 truncate">Order #{order.orderNumber}</h3>
+                                    <p className="text-xs md:text-sm font-medium text-gray-400">{new Date(order.createdAt).toLocaleDateString()}</p>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-2xl font-black text-primary tracking-tight">৳{order.finalAmount || order.totalAmount}</p>
+                                <div className="text-right shrink-0">
+                                    <p className="text-xl md:text-2xl font-black text-primary tracking-tight">৳{order.finalAmount || order.totalAmount}</p>
                                     <div className="flex flex-col items-end gap-1 mt-2">
-                                        <Link to={`/orders/${order.orderId}`} className="text-[10px] font-black uppercase text-primary hover:underline tracking-widest">View Details</Link>
-                                        <Link to={`/order-messages/${order.orderId}`} className="inline-flex items-center gap-2 text-[10px] font-black uppercase text-secondary hover:underline tracking-widest"><BsChatDots /> Chat Support</Link>
+                                        <Link to={`/orders/${order.orderId}`} className="text-[8px] md:text-[10px] font-black uppercase text-primary hover:underline tracking-widest">Details</Link>
+                                        <Link to={`/order-messages/${order.orderId}`} className="inline-flex items-center gap-1 text-[8px] md:text-[10px] font-black uppercase text-secondary hover:underline tracking-widest"><BsChatDots /> Chat</Link>
                                     </div>
                                 </div>
                             </div>

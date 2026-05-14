@@ -1,13 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense, lazy } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { getProducts } from "../../utils/dbServices";
 import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
-import { BsCartPlus, BsLightningCharge, BsArrowLeft, BsTruck, BsShieldCheck, BsArrowRepeat } from "react-icons/bs";
-import AIRecommendations from "../../components/AIRecommendations";
-import ProductSEO from "../../components/common/ProductSEO";
-import ShareButtons from "../../components/ShareButtons";
+import { BsArrowLeft, BsCartPlus, BsLightningCharge, BsHeart } from "react-icons/bs";
 import { toast } from "react-hot-toast";
+
+// Components
+import ProductSEO from "../../components/common/ProductSEO";
+import AIRecommendations from "../../components/AIRecommendations";
+import ShareButtons from "../../components/ShareButtons";
+
+// New Redesign Components
+import ProductGallery from "../../components/product/ProductGallery";
+import ProductInfo from "../../components/product/ProductInfo";
+import VariantSelector from "../../components/product/VariantSelector";
+import ProductTabs from "../../components/product/ProductTabs";
+import StickyCTA from "../../components/product/StickyCTA";
 
 const ProductDetails = () => {
     const { id } = useParams();
@@ -25,37 +35,23 @@ const ProductDetails = () => {
             const found = allProducts.find(p => p.id === id);
             setProduct(found);
 
-            // --- GROUP-BASED VARIETY LOGIC ---
             if (found?.variations?.sizes?.length > 0) {
                 const isFashionProduct = found.category?.toLowerCase()?.includes("fashion");
-                
                 if (isFashionProduct) {
                     const fashionItems = cart.filter(i => i.category?.toLowerCase()?.includes("fashion"));
-                    
-                    // Determine which group the NEXT item will join
                     const currentGroupIndex = Math.floor(fashionItems.length / 3);
                     const itemsInCurrentGroup = fashionItems.slice(currentGroupIndex * 3, (currentGroupIndex + 1) * 3);
-                    
-                    const takenSizesInGroup = itemsInCurrentGroup.map(i => 
-                        i.selectedVariations?.size?.trim()?.toLowerCase() || "n/a"
-                    );
-
+                    const takenSizesInGroup = itemsInCurrentGroup.map(i => i.selectedVariations?.size?.trim()?.toLowerCase() || "n/a");
                     const availableSizes = found.variations.sizes;
-                    // Auto-pick a size that isn't taken in the CURRENT group
-                    const smartSize = availableSizes.find(s => 
-                        !takenSizesInGroup.includes(s.trim().toLowerCase())
-                    ) || availableSizes[0];
-                    
+                    const smartSize = availableSizes.find(s => !takenSizesInGroup.includes(s.trim().toLowerCase())) || availableSizes[0];
                     setSelectedSize(smartSize);
                 } else {
                     setSelectedSize(found.variations.sizes[0]);
                 }
             }
-
             if (found?.variations?.colors?.length > 0) {
                 setSelectedColor(found.variations.colors[0]);
             }
-
             setLoading(false);
         };
         fetchProduct();
@@ -71,17 +67,13 @@ const ProductDetails = () => {
             return;
         }
 
-        // Check for Variety Rule Violation (GROUP-BASED)
         const isFashionProduct = product.category?.toLowerCase()?.includes("fashion");
         if (isFashionProduct && selectedSize) {
             const fashionItems = cart.filter(i => i.category?.toLowerCase()?.includes("fashion"));
             const currentGroupIndex = Math.floor(fashionItems.length / 3);
             const itemsInCurrentGroup = fashionItems.slice(currentGroupIndex * 3, (currentGroupIndex + 1) * 3);
-            
             const normalizedSelected = selectedSize.trim().toLowerCase();
-            const isDuplicateInGroup = itemsInCurrentGroup.some(i => 
-                i.selectedVariations?.size?.trim()?.toLowerCase() === normalizedSelected
-            );
+            const isDuplicateInGroup = itemsInCurrentGroup.some(i => i.selectedVariations?.size?.trim()?.toLowerCase() === normalizedSelected);
 
             if (isDuplicateInGroup) {
                 toast.error(`This size is already selected in the current group of 3.`);
@@ -90,7 +82,10 @@ const ProductDetails = () => {
         }
 
         addToCart(product, { size: selectedSize, color: selectedColor });
-        toast.success("Added to cart!");
+        toast.success("Added to cart!", {
+            icon: '🛍️',
+            style: { borderRadius: '15px', background: '#333', color: '#fff', fontSize: '12px', fontWeight: 'bold' }
+        });
     };
 
     const handleBuyNow = () => {
@@ -98,23 +93,14 @@ const ProductDetails = () => {
             toast.error("Please select a size");
             return;
         }
-        if (product.variations?.colors?.length > 0 && !selectedColor) {
-            toast.error("Please select a color");
-            return;
-        }
-
-        // Check for Variety Rule Violation (GROUP-BASED)
+        
         const isFashionProductBuyNow = product.category?.toLowerCase()?.includes("fashion");
         if (isFashionProductBuyNow && selectedSize) {
             const fashionItems = cart.filter(i => i.category?.toLowerCase()?.includes("fashion"));
             const currentGroupIndex = Math.floor(fashionItems.length / 3);
             const itemsInCurrentGroup = fashionItems.slice(currentGroupIndex * 3, (currentGroupIndex + 1) * 3);
-            
             const normalizedSelected = selectedSize.trim().toLowerCase();
-            const isDuplicateInGroup = itemsInCurrentGroup.some(i => 
-                i.selectedVariations?.size?.trim()?.toLowerCase() === normalizedSelected
-            );
-
+            const isDuplicateInGroup = itemsInCurrentGroup.some(i => i.selectedVariations?.size?.trim()?.toLowerCase() === normalizedSelected);
             if (isDuplicateInGroup) {
                 toast.error(`This size is already selected in the current group of 3.`);
                 return;
@@ -129,158 +115,126 @@ const ProductDetails = () => {
         }
     };
 
-    if (loading) return <div className="text-center py-20 text-gray-500 font-bold uppercase tracking-widest animate-pulse">Scanning Inventory...</div>;
-    if (!product) return <div className="text-center py-20 font-black text-gray-300 uppercase">Product Disappeared</div>;
+    if (loading) return (
+        <div className="min-h-screen bg-white p-4 md:p-8">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="lg:col-span-8">
+                    <div className="aspect-square bg-gray-100 animate-pulse rounded-[3rem]" />
+                </div>
+                <div className="lg:col-span-4 space-y-6">
+                    <div className="h-4 w-24 bg-gray-100 animate-pulse rounded-full" />
+                    <div className="h-12 w-full bg-gray-100 animate-pulse rounded-2xl" />
+                    <div className="h-8 w-32 bg-gray-100 animate-pulse rounded-xl" />
+                    <div className="h-48 w-full bg-gray-100 animate-pulse rounded-3xl" />
+                    <div className="h-16 w-full bg-gray-900/5 animate-pulse rounded-2xl" />
+                </div>
+            </div>
+        </div>
+    );
+
+    if (!product) return (
+        <div className="min-h-screen flex flex-col items-center justify-center gap-6">
+            <h1 className="text-4xl font-black text-gray-200 uppercase tracking-tighter">Product Disappeared</h1>
+            <button onClick={() => navigate('/')} className="bg-primary text-white px-8 py-3 rounded-full font-black uppercase text-[10px] tracking-widest hover:scale-105 transition-transform">Back to Home</button>
+        </div>
+    );
 
     return (
-        <div className="pb-24 md:pb-8">
+        <div className="min-h-screen bg-[#fafafa] pb-24 md:pb-12">
             <ProductSEO product={product} />
 
-            <button onClick={() => navigate(-1)} className="md:hidden mb-4 flex items-center gap-2 text-gray-400 font-black uppercase text-[10px] tracking-widest hover:text-primary transition-colors">
-                <BsArrowLeft size={16} /> Back
-            </button>
-
-            <div className="max-w-6xl mx-auto bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
-                <div className="md:flex">
-                    <div className="md:w-1/2 bg-gray-50 flex items-center justify-center p-4 md:p-12">
-                        <div className="aspect-square w-full max-w-md bg-white rounded-[2rem] shadow-2xl shadow-gray-200/50 overflow-hidden flex items-center justify-center p-8">
-                            <img className="max-h-full max-w-full object-contain hover:scale-110 transition duration-700" src={product.image || "https://via.placeholder.com/500"} alt={product.title} />
-                        </div>
+            {/* Top Navigation */}
+            <nav className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between bg-transparent">
+                <button onClick={() => navigate(-1)} className="group flex items-center gap-3 text-gray-400 font-black uppercase text-[10px] tracking-widest hover:text-primary transition-colors">
+                    <div className="p-2 bg-white rounded-full shadow-sm group-hover:bg-primary group-hover:text-white transition-all">
+                        <BsArrowLeft size={16} />
                     </div>
+                    Back
+                </button>
+                <button className="p-3 bg-white rounded-full shadow-sm text-gray-400 hover:text-red-500 transition-all active:scale-90">
+                    <BsHeart size={20} />
+                </button>
+            </nav>
 
-                    <div className="p-8 md:p-16 md:w-1/2 flex flex-col justify-center">
-                        <div className="flex items-center gap-3 mb-6">
-                            <span className="uppercase tracking-[0.2em] text-[9px] bg-dark text-white px-3 py-1 rounded-full font-black">
-                                {product.category}
-                            </span>
-                            {product.category?.toLowerCase()?.includes("fashion") && (
-                                <span className="text-[9px] bg-secondary text-white px-3 py-1 rounded-full font-black animate-pulse">
-                                    Adding to Set {String.fromCharCode(65 + Math.floor(cart.filter(i => i.category?.toLowerCase()?.includes("fashion")).length / 3))}
-                                </span>
-                            )}
-                            {product.stock > 0 ? (
-                                <span className="text-[9px] text-green-600 font-black uppercase tracking-[0.2em] border border-green-100 px-3 py-1 rounded-full bg-green-50/50">
-                                    Available ({product.stock})
-                                </span>
-                            ) : (
-                                <span className="text-[9px] text-red-500 font-black uppercase tracking-[0.2em] border border-red-100 px-3 py-1 rounded-full bg-red-50/50">
-                                    Sold Out
-                                </span>
-                            )}
-                        </div>
+            <main className="max-w-7xl mx-auto px-4 md:px-8">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16">
+                    
+                    {/* Left: Product Gallery */}
+                    <motion.div 
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="lg:col-span-7 xl:col-span-8"
+                    >
+                        <ProductGallery image={product.image} gallery={product.gallery} />
+                    </motion.div>
 
-                        <h1 className="text-3xl md:text-5xl font-black text-gray-900 mb-6 leading-tight tracking-tighter">{product.title}</h1>
-                        
-                        <div className="flex items-center gap-6 mb-10">
-                            {product.discountPrice ? (
-                                <>
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Current Price</span>
-                                        <p className="text-primary text-4xl font-black tracking-tighter">৳{product.discountPrice}</p>
-                                    </div>
-                                    <div className="flex flex-col opacity-30">
-                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Was</span>
-                                        <p className="text-gray-900 text-2xl font-black line-through tracking-tighter">৳{product.price}</p>
-                                    </div>
-                                    <div className="bg-secondary text-white px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest animate-bounce-subtle">
-                                        Save ৳{product.price - product.discountPrice}
-                                    </div>
-                                </>
-                            ) : (
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Price</span>
-                                    <p className="text-primary text-4xl font-black tracking-tighter">৳{product.price}</p>
-                                </div>
-                            )}
-                        </div>
+                    {/* Right: Product Details */}
+                    <motion.div 
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="lg:col-span-5 xl:col-span-4"
+                    >
+                        <div className="sticky top-8 flex flex-col gap-2">
+                            <ProductInfo product={product} cart={cart} />
+                            
+                            <VariantSelector 
+                                product={product} 
+                                cart={cart}
+                                selectedSize={selectedSize}
+                                setSelectedSize={setSelectedSize}
+                                selectedColor={selectedColor}
+                                setSelectedColor={setSelectedColor}
+                            />
 
-                        <div className="prose prose-sm text-gray-500 mb-10 max-w-none font-medium leading-relaxed">
-                            <p>{product.description}</p>
-                        </div>
-
-                        {/* Dropdown Selectors */}
-                        <div className="space-y-8 mb-10 border-t border-b border-gray-50 py-10">
-                            {product.variations?.sizes?.length > 0 && (
-                                <div className="flex flex-col gap-3">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Select Size Specification</label>
-                                    <select 
-                                        value={selectedSize} 
-                                        onChange={(e) => setSelectedSize(e.target.value)}
-                                        className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 font-black text-sm text-gray-700 focus:ring-2 focus:ring-primary/20 transition-all uppercase tracking-widest appearance-none cursor-pointer"
-                                        style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E\")", backgroundRepeat: "no-repeat", backgroundPosition: "right 1.5rem center", backgroundSize: "1.2em" }}
+                            {/* Desktop CTA */}
+                            <div className="hidden md:flex flex-col gap-4 py-6">
+                                <div className="flex items-center gap-4">
+                                    <button 
+                                        onClick={handleAddToCart} 
+                                        disabled={product.stock <= 0} 
+                                        className="btn-premium flex-1 flex items-center justify-center gap-3 bg-gray-100 text-gray-900 px-8 py-5 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em]"
                                     >
-                                        {product.variations.sizes.map(size => {
-                                            const isFashionProduct = product.category?.toLowerCase()?.includes("fashion");
-                                            let isDisabled = false;
-                                            
-                                            if (isFashionProduct) {
-                                                const fashionItems = cart.filter(i => i.category?.toLowerCase()?.includes("fashion"));
-                                                const currentGroupIndex = Math.floor(fashionItems.length / 3);
-                                                const itemsInCurrentGroup = fashionItems.slice(currentGroupIndex * 3, (currentGroupIndex + 1) * 3);
-                                                
-                                                const normalized = size.trim().toLowerCase();
-                                                isDisabled = itemsInCurrentGroup.some(i => 
-                                                    i.selectedVariations?.size?.trim()?.toLowerCase() === normalized
-                                                );
-                                            }
-
-                                            return (
-                                                <option key={size} value={size} disabled={isDisabled}>
-                                                    {size} {isDisabled ? "(Taken in Group)" : ""}
-                                                </option>
-                                            );
-                                        })}
-                                    </select>
+                                        <BsCartPlus size={20} /> Add to Cart
+                                    </button>
+                                    <button 
+                                        onClick={handleBuyNow} 
+                                        disabled={product.stock <= 0} 
+                                        className="btn-premium flex-1 flex items-center justify-center gap-3 bg-primary text-white px-8 py-5 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-2xl shadow-green-100"
+                                    >
+                                        <BsLightningCharge size={20} /> Buy Now
+                                    </button>
                                 </div>
-                            )}
+                            </div>
 
-                            {product.variations?.colors?.length > 0 && (
-                                <div className="flex flex-col gap-3">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Available Colors</label>
-                                    <div className="flex flex-wrap gap-3">
-                                        {product.variations.colors.map(color => (
-                                            <button key={color} onClick={() => setSelectedColor(color)} className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 transition-all ${selectedColor === color ? 'bg-primary border-primary text-white shadow-xl shadow-green-100' : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200'}`}>
-                                                {color}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="mb-10">
                             <ShareButtons product={product} />
+                            
+                            <ProductTabs description={product.description} />
                         </div>
-
-                        <div className="hidden md:flex items-center gap-4">
-                            <button onClick={handleAddToCart} disabled={product.stock <= 0} className="flex-1 flex items-center justify-center gap-3 bg-gray-100 text-gray-900 px-8 py-5 rounded-2xl hover:bg-gray-200 transition-all font-black uppercase text-[11px] tracking-[0.2em] disabled:opacity-30">
-                                <BsCartPlus size={20} /> Add to Cart
-                            </button>
-                            <button onClick={handleBuyNow} disabled={product.stock <= 0} className="flex-1 flex items-center justify-center gap-3 bg-primary text-white px-8 py-5 rounded-2xl hover:bg-green-700 transition-all font-black uppercase text-[11px] tracking-[0.2em] shadow-2xl shadow-green-100 disabled:opacity-30">
-                                <BsLightningCharge size={20} /> Checkout Now
-                            </button>
-                        </div>
-                    </div>
+                    </motion.div>
                 </div>
-            </div>
 
-            <div className="md:hidden fixed bottom-16 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-gray-100 p-6 z-40">
-                <div className="flex items-center gap-4">
-                    <button onClick={handleAddToCart} disabled={product.stock <= 0} className="flex-1 bg-gray-100 text-gray-900 py-5 rounded-2xl flex items-center justify-center font-black uppercase text-[10px] tracking-widest disabled:opacity-30">
-                        <BsCartPlus size={18} />
-                    </button>
-                    <button onClick={handleBuyNow} disabled={product.stock <= 0} className="flex-[3] bg-primary text-white py-5 rounded-2xl flex items-center justify-center gap-2 font-black uppercase text-[10px] tracking-[0.2em] shadow-2xl shadow-green-100 disabled:opacity-30">
-                        <BsLightningCharge size={18} /> Buy Now
-                    </button>
+                {/* Recommendations */}
+                <div className="mt-20 space-y-24 border-t border-gray-100 pt-20">
+                    <Suspense fallback={<div className="h-96 bg-gray-50 rounded-3xl animate-pulse" />}>
+                        <AIRecommendations type="SIMILAR" params={{ productId: id }} title="Style Similarities" />
+                    </Suspense>
+                    <Suspense fallback={<div className="h-96 bg-gray-50 rounded-3xl animate-pulse" />}>
+                        <AIRecommendations type="BOUGHT_TOGETHER" params={{ productId: id }} title="Complete the Look" />
+                    </Suspense>
                 </div>
-            </div>
+            </main>
 
-            <div className="mt-24 space-y-24">
-                <AIRecommendations type="SIMILAR" params={{ productId: id }} title="Style Similarities" />
-                <AIRecommendations type="BOUGHT_TOGETHER" params={{ productId: id }} title="Complete the Look" />
-            </div>
+            {/* Mobile Sticky CTA */}
+            <StickyCTA 
+                product={product} 
+                onAddToCart={handleAddToCart} 
+                onBuyNow={handleBuyNow} 
+                disabled={product.stock <= 0} 
+            />
         </div>
     );
 };
 
 export default ProductDetails;
+

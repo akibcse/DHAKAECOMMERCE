@@ -78,13 +78,13 @@ const OrderDetailsPage = () => {
                 {/* Left Column: Order Main Info */}
                 <div className="lg:col-span-2 space-y-8">
                     <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-100">
-                        <div className="flex justify-between items-start mb-8">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                             <div>
-                                <h1 className="text-3xl font-black text-gray-900 mb-1">Order #{order.orderNumber}</h1>
-                                <p className="text-sm font-medium text-gray-400">Placed on {new Date(order.createdAt).toLocaleString()}</p>
+                                <h1 className="text-2xl md:text-3xl font-black text-gray-900 mb-1 leading-none">Order #{order.orderNumber}</h1>
+                                <p className="text-[10px] md:text-sm font-medium text-gray-400">Placed on {new Date(order.createdAt).toLocaleString()}</p>
                             </div>
-                            <div className="text-right">
-                                <span className={`inline-flex px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${order.orderStatus === 'delivered' ? 'bg-green-100 text-green-700' :
+                            <div className="shrink-0">
+                                <span className={`inline-flex px-3 py-1.5 md:px-4 md:py-2 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest ${order.orderStatus === 'delivered' ? 'bg-green-100 text-green-700' :
                                     order.orderStatus === 'cancelled' ? 'bg-red-100 text-red-700' :
                                         'bg-yellow-100 text-yellow-700'
                                     }`}>
@@ -104,15 +104,15 @@ const OrderDetailsPage = () => {
                                     { label: "Delivered", icon: <BsCheckCircle />, step: 4 },
                                 ].map((s, idx, arr) => (
                                     <div key={idx} className="flex flex-col items-center flex-1 relative">
-                                        <div className={`w-10 h-10 rounded-full border-4 flex items-center justify-center z-10 ${currentStep >= s.step ? "bg-primary border-white text-white shadow-lg shadow-primary/20" : "bg-white border-gray-100 text-gray-300"
+                                        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full border-2 md:border-4 flex items-center justify-center z-10 shrink-0 ${currentStep >= s.step ? "bg-primary border-white text-white shadow-lg shadow-primary/20" : "bg-white border-gray-100 text-gray-300"
                                             }`}>
-                                            {s.icon}
+                                            <span className="scale-75 md:scale-100">{s.icon}</span>
                                         </div>
-                                        <span className={`text-[9px] font-black uppercase mt-3 tracking-wider ${currentStep >= s.step ? "text-gray-900" : "text-gray-300"}`}>
+                                        <span className={`text-[7px] md:text-[9px] font-black uppercase mt-3 tracking-wider text-center ${currentStep >= s.step ? "text-gray-900" : "text-gray-300"}`}>
                                             {s.label}
                                         </span>
                                         {idx < arr.length - 1 && (
-                                            <div className={`absolute top-5 left-1/2 w-full h-[3px] -z-0 ${currentStep > s.step ? "bg-primary" : "bg-gray-100"
+                                            <div className={`absolute top-4 md:top-5 left-1/2 w-full h-[2px] md:h-[3px] -z-0 ${currentStep > s.step ? "bg-primary" : "bg-gray-100"
                                                 }`} />
                                         )}
                                     </div>

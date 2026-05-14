@@ -411,11 +411,11 @@ const Checkout = () => {
                             </div>
 
                             {/* Coupon Input */}
-                            <div className="mb-8 p-1.5 bg-white/10 rounded-2xl flex relative z-10">
+                            <div className="mb-8 p-1 md:p-1.5 bg-white/10 rounded-2xl flex items-center relative z-10 border border-white/5">
                                 <input
                                     type="text"
-                                    placeholder="COUPON CODE"
-                                    className="bg-transparent border-none focus:ring-0 text-xs font-black uppercase tracking-widest px-4 py-3 flex-1 placeholder:text-gray-500"
+                                    placeholder="COUPON"
+                                    className="bg-transparent border-none focus:ring-0 text-[10px] md:text-xs font-black uppercase tracking-widest px-3 md:px-4 py-3 flex-1 placeholder:text-gray-500 min-w-0"
                                     value={couponCode}
                                     onChange={e => setCouponCode(e.target.value.toUpperCase())}
                                     disabled={!!appliedCoupon}
@@ -423,7 +423,7 @@ const Checkout = () => {
                                 {appliedCoupon ? (
                                     <button
                                         onClick={removeCoupon}
-                                        className="bg-red-500/20 text-red-400 px-4 rounded-xl hover:bg-red-500/30 transition-all"
+                                        className="bg-red-500/20 text-red-400 px-3 py-3 rounded-xl hover:bg-red-500/30 transition-all flex shrink-0"
                                     >
                                         <BsX size={20} />
                                     </button>
@@ -431,7 +431,7 @@ const Checkout = () => {
                                     <button
                                         onClick={handleApplyCoupon}
                                         disabled={isValidating || !couponCode}
-                                        className="bg-secondary text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-red-700 transition-all disabled:opacity-50"
+                                        className="bg-secondary text-white px-4 md:px-6 py-3 rounded-xl font-black text-[9px] md:text-[10px] uppercase tracking-widest hover:bg-red-700 transition-all disabled:opacity-50 flex shrink-0"
                                     >
                                         {isValidating ? '...' : 'Apply'}
                                     </button>
@@ -468,9 +468,9 @@ const Checkout = () => {
                                     <span>Shipping ({location === 'inside' ? 'Inside Dhaka' : 'Outside Dhaka'})</span>
                                     <span className="text-secondary font-black">৳{location === 'inside' ? (settings?.payments?.insideDhakaCharge || 100) : (settings?.payments?.outsideDhakaCharge || 150)}</span>
                                 </div>
-                                <div className="flex justify-between text-2xl font-black pt-5 border-t border-white/20 mt-4 text-white uppercase">
-                                    <span>Total Payable</span>
-                                    <span className="text-secondary tracking-tight">৳{Number(cartTotal) - Number(discountAmount) + (location === 'inside' ? (settings?.payments?.insideDhakaCharge || 100) : (settings?.payments?.outsideDhakaCharge || 150))}</span>
+                                <div className="flex justify-between items-end text-xl md:text-2xl font-black pt-5 border-t border-white/20 mt-4 text-white uppercase gap-2">
+                                    <span className="shrink-0 text-xs md:text-base">Total Payable</span>
+                                    <span className="text-secondary tracking-tight truncate">৳{Number(cartTotal) - Number(discountAmount) + (location === 'inside' ? (settings?.payments?.insideDhakaCharge || 100) : (settings?.payments?.outsideDhakaCharge || 150))}</span>
                                 </div>
                                 <div className="p-3 bg-white/5 rounded-xl border border-white/10 mt-2">
                                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center">
