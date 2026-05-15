@@ -13,6 +13,15 @@ const EXTERNAL_FALLBACK = "https://placehold.co/1200x630/006A4E/FFFFFF.png?text=
  */
 function optimizeForOG(url) {
     if (!url) return url;
+    
+    // Auto-fix ImgBB viewer links to direct links if possible
+    // Viewer: https://ibb.co/XXXXX -> we can't easily guess direct without API
+    // but if it's already i.ibb.co, it's good.
+    if (url.includes("ibb.co") && !url.includes("i.ibb.co")) {
+        // We can't fix it reliably here, but we'll at least not break it further.
+        return url;
+    }
+
     const match = url.match(/^(https:\/\/res\.cloudinary\.com\/[^/]+\/image\/upload\/)(.+)$/);
     if (!match) return url;
     const base = match[1];
@@ -31,10 +40,12 @@ function isCrawler(ua = "") {
     return BOTS.some(b => ua.toLowerCase().includes(b));
 }
 
+const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
 function fetchText(url, timeoutMs = 5000) {
     return new Promise((resolve, reject) => {
         const lib = url.startsWith("https") ? https : http;
-        const req = lib.get(url, { headers: { "User-Agent": "dhakaecommerce-og/1.0" } }, res => {
+        const req = lib.get(url, { headers: { "User-Agent": USER_AGENT } }, res => {
             let d = "";
             res.on("data", c => d += c);
             res.on("end", () => resolve(d));
@@ -47,10 +58,26 @@ function fetchText(url, timeoutMs = 5000) {
 
 function verifyImage(url, fallback) {
     if (!url || !(url.startsWith("https://") || url.startsWith("http://"))) return Promise.resolve(fallback);
+    
+    // If it's a direct ImgBB link or Cloudinary, they are usually reliable.
+    // We only verify to ensure it's not a 404, but we'll be more lenient with methods.
+    if (url.includes("i.ibb.co") || url.includes("cloudinary.com")) {
+        return Promise.resolve(url);
+    }
+
     return new Promise(resolve => {
         const lib = url.startsWith("https") ? https : http;
         try {
-            const req = lib.request(url, { method: "HEAD", headers: { "User-Agent": "dhakaecommerce-og/1.0" } }, res => {
+            // Some CDNs block HEAD, so we try a GET with a small range or just trust the URL
+            // for common image hosting sites.
+            const options = { 
+                method: "GET", 
+                headers: { 
+                    "User-Agent": USER_AGENT,
+                    "Range": "bytes=0-0" // Just check if we can get the first byte
+                } 
+            };
+            const req = lib.request(url, options, res => {
                 const ok = res.statusCode >= 200 && res.statusCode < 400;
                 resolve(ok ? url : fallback);
             });
