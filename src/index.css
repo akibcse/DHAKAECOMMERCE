@@ -139,4 +139,11 @@ body {
   .product-swiper .swiper-button-prev {
     @apply text-primary bg-white/80 backdrop-blur-sm w-10 h-10 rounded-full after:text-xs shadow-lg !important;
   }
+  /* Safe Area Utilities */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
 }
